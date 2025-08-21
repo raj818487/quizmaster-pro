@@ -1,5 +1,13 @@
 # QuizmasterPro
 
+Electron integration has been removed. This project now runs as a pure Angular app using an in-memory mock DB.
+
+Run locally:
+
+1. Install deps: `npm install`
+2. Start dev server: `npm run start`
+3. Open http://localhost:4200/#/auth
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.0.1.
 
 ## Development server

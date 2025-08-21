@@ -1,0 +1,30 @@
+.db-mgmt {
+  padding: 1rem;
+}
+.card {
+  border: 1px solid #ffffff22;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.msg {
+  margin-top: 0.5rem;
+}
+/* DB management removed */

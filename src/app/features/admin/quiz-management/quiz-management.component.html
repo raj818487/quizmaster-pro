@@ -1,0 +1,372 @@
+<div class="quiz-management">
+  <h2>🎯 Quiz Management Dashboard</h2>
+
+  <!-- Create New Quiz Section -->
+  <div class="create-quiz-section" *ngIf="!editingQuiz">
+    <h3>✨ Create New Quiz</h3>
+    <form (ngSubmit)="createQuiz()" #quizForm="ngForm">
+      <div class="form-group">
+        <label for="title">Quiz Title *</label>
+        <input
+          type="text"
+          id="title"
+          [(ngModel)]="newQuiz.title"
+          name="title"
+          placeholder="Enter an engaging quiz title..."
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          [(ngModel)]="newQuiz.description"
+          name="description"
+          placeholder="Describe what this quiz is about..."
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="newQuiz.is_public"
+            name="is_public"
+          />
+          Make this quiz public (visible to all users)
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="time_limit">Time Limit (minutes, 0 = no limit)</label>
+        <input
+          type="number"
+          id="time_limit"
+          [(ngModel)]="newQuiz.time_limit"
+          name="time_limit"
+          min="0"
+          max="180"
+          placeholder="0"
+        />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="!quizForm.valid">
+          🚀 Create Quiz
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Edit Quiz Section -->
+  <div class="edit-quiz-section" *ngIf="editingQuiz">
+    <h3>📝 Edit Quiz: {{ editingQuiz.title }}</h3>
+    <form (ngSubmit)="updateQuiz()" #editForm="ngForm">
+      <div class="form-group">
+        <label for="edit-title">Quiz Title *</label>
+        <input
+          type="text"
+          id="edit-title"
+          [(ngModel)]="editingQuiz.title"
+          name="title"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="edit-description">Description</label>
+        <textarea
+          id="edit-description"
+          [(ngModel)]="editingQuiz.description"
+          name="description"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="editingQuiz.is_public"
+            name="is_public"
+          />
+          Public Quiz
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-time-limit">Time Limit (minutes)</label>
+        <input
+          type="number"
+          id="edit-time-limit"
+          [(ngModel)]="editingQuiz.time_limit"
+          name="time_limit"
+          min="0"
+          max="180"
+        />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-success" [disabled]="!editForm.valid">
+          💾 Update Quiz
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancelEdit()">
+          ❌ Cancel
+        </button>
+      </div>
+    </form>
+
+    <!-- Questions Management -->
+    <div class="questions-section">
+      <h4 class="section-title">
+        🎲 Questions ({{ editingQuizQuestions.length }})
+      </h4>
+
+      <!-- Questions List -->
+      <div class="question-list" *ngIf="editingQuizQuestions.length > 0">
+        <div
+          *ngFor="let question of editingQuizQuestions; let i = index"
+          class="question-item"
+        >
+          <div class="question-header">
+            <div class="question-meta">
+              <strong>Question {{ i + 1 }}</strong>
+              <span class="question-type">{{
+                getQuestionTypeDisplay(question.type)
+              }}</span>
+              <span class="points">{{ question.points }} pts</span>
+            </div>
+            <div class="question-actions">
+              <button class="btn-warning" (click)="editQuestion(question)">
+                ✏️ Edit
+              </button>
+              <button class="btn-danger" (click)="deleteQuestion(question.id!)">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+
+          <div class="question-text">{{ question.text }}</div>
+
+          <div
+            class="question-options"
+            *ngIf="question.type === 'multiple_choice' && question.options"
+          >
+            <strong>Options:</strong> {{ getOptionsDisplay(question.options) }}
+          </div>
+
+          <div class="question-answer">
+            <strong>✅ Correct Answer:</strong> {{ question.correct_answer }}
+          </div>
+        </div>
+      </div>
+
+      <div
+        *ngIf="editingQuizQuestions.length === 0"
+        style="text-align: center; padding: 20px; color: #6c757d"
+      >
+        <p>📝 No questions added yet. Create your first question below!</p>
+      </div>
+
+      <!-- Add/Edit Question Form -->
+      <div class="question-form">
+        <h5>
+          {{ editingQuestion ? "✏️ Edit Question" : "➕ Add New Question" }}
+        </h5>
+        <form (ngSubmit)="saveQuestion()" #questionForm="ngForm">
+          <div class="form-group">
+            <label for="question-text">Question Text *</label>
+            <input
+              type="text"
+              id="question-text"
+              [(ngModel)]="currentQuestion.text"
+              name="text"
+              placeholder="Enter your question here..."
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="question-type">Question Type *</label>
+            <select
+              id="question-type"
+              [(ngModel)]="currentQuestion.type"
+              name="type"
+              (change)="onQuestionTypeChange()"
+              required
+            >
+              <option value="text">Text Answer</option>
+              <option value="multiple_choice">Multiple Choice</option>
+              <option value="true_false">True/False</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="question-points">Points</label>
+            <input
+              type="number"
+              id="question-points"
+              [(ngModel)]="currentQuestion.points"
+              name="points"
+              min="1"
+              max="10"
+              value="1"
+            />
+          </div>
+
+          <!-- Multiple Choice Options -->
+          <div
+            class="form-group"
+            *ngIf="currentQuestion.type === 'multiple_choice'"
+          >
+            <label>Answer Options *</label>
+            <div class="options-list">
+              <div
+                *ngFor="
+                  let option of getCurrentQuestionOptionsAsArray();
+                  let i = index
+                "
+                class="option-item"
+              >
+                <input
+                  type="text"
+                  [value]="option"
+                  (input)="onOptionChange(i, $event)"
+                  [name]="'option-' + i"
+                  placeholder="Option {{ i + 1 }}"
+                  required
+                />
+                <button
+                  type="button"
+                  *ngIf="getCurrentQuestionOptionsAsArray().length > 2"
+                  (click)="removeOption(i)"
+                  class="btn-danger"
+                >
+                  ❌
+                </button>
+              </div>
+              <button
+                type="button"
+                class="add-option-btn"
+                (click)="addOption()"
+                *ngIf="getCurrentQuestionOptionsAsArray().length < 6"
+              >
+                ➕ Add Option
+              </button>
+            </div>
+          </div>
+
+          <!-- Correct Answer -->
+          <div class="correct-answer-section">
+            <div class="form-group" *ngIf="currentQuestion.type === 'text'">
+              <label for="correct-answer">Correct Answer *</label>
+              <input
+                type="text"
+                id="correct-answer"
+                [(ngModel)]="currentQuestion.correct_answer"
+                name="correct_answer"
+                placeholder="Enter the correct answer..."
+                required
+              />
+            </div>
+
+            <div
+              class="form-group"
+              *ngIf="currentQuestion.type === 'multiple_choice'"
+            >
+              <label for="correct-answer-select">Correct Answer *</label>
+              <select
+                id="correct-answer-select"
+                [(ngModel)]="currentQuestion.correct_answer"
+                name="correct_answer"
+                required
+              >
+                <option value="">Select the correct option...</option>
+                <option
+                  *ngFor="let option of getCurrentQuestionOptionsAsArray()"
+                  [value]="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+            </div>
+
+            <div
+              class="form-group"
+              *ngIf="currentQuestion.type === 'true_false'"
+            >
+              <label for="correct-answer-tf">Correct Answer *</label>
+              <select
+                id="correct-answer-tf"
+                [(ngModel)]="currentQuestion.correct_answer"
+                name="correct_answer"
+                required
+              >
+                <option value="True">True</option>
+                <option value="False">False</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="btn-success"
+              [disabled]="!questionForm.valid"
+            >
+              {{ editingQuestion ? "💾 Update Question" : "➕ Add Question" }}
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="cancelQuestionEdit()"
+              *ngIf="editingQuestion"
+            >
+              ❌ Cancel Edit
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Quizzes List -->
+  <div class="create-quiz-section" *ngIf="!editingQuiz">
+    <h3>📚 My Quizzes ({{ userQuizzes.length }})</h3>
+
+    <div
+      *ngIf="userQuizzes.length === 0"
+      style="text-align: center; padding: 40px; color: #6c757d"
+    >
+      <p>🎯 You haven't created any quizzes yet.</p>
+      <p>Create your first quiz using the form above!</p>
+    </div>
+
+    <div class="quiz-grid" *ngIf="userQuizzes.length > 0">
+      <div *ngFor="let quiz of userQuizzes" class="quiz-card">
+        <h4>{{ quiz.title }}</h4>
+        <p>{{ quiz.description || "No description provided" }}</p>
+
+        <div class="quiz-meta">
+          <span
+            class="quiz-status"
+            [class.public]="quiz.is_public"
+            [class.private]="!quiz.is_public"
+          >
+            {{ quiz.is_public ? "🌍 Public" : "🔒 Private" }}
+          </span>
+          <span *ngIf="quiz.time_limit && quiz.time_limit > 0">
+            ⏱️ {{ quiz.time_limit }}min
+          </span>
+        </div>
+
+        <div class="quiz-actions">
+          <button class="btn-primary" (click)="editQuiz(quiz)">📝 Edit</button>
+          <button class="btn-danger" (click)="deleteQuizConfirm(quiz)">
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,79 @@
+<div class="manage-users-container">
+  <h2>Manage Users</h2>
+
+  <section class="create-user card">
+    <h3>Create User</h3>
+    <div class="form-row">
+      <input [(ngModel)]="newUsername" placeholder="Username" />
+      <input [(ngModel)]="newPassword" placeholder="Password" type="password" />
+      <select [(ngModel)]="newRole">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button class="btn btn-primary" (click)="addUser()">Add</button>
+    </div>
+  </section>
+
+  <section class="users-list card">
+    <div class="header">
+      <h3>All Users</h3>
+      <span *ngIf="loading">Loading...</span>
+    </div>
+    <div class="table">
+      <div class="table-row table-header">
+        <div>ID</div>
+        <div>Username</div>
+        <div>Role</div>
+        <div class="actions">Actions</div>
+      </div>
+
+      <div class="table-row" *ngFor="let u of users">
+        <div>{{ u.id }}</div>
+        <div>
+          <ng-container *ngIf="!u._edit; else editUser">
+            {{ u.username }}
+          </ng-container>
+          <ng-template #editUser>
+            <input [(ngModel)]="u.username" />
+            <input
+              [(ngModel)]="u._password"
+              type="password"
+              placeholder="New password (optional)"
+            />
+          </ng-template>
+        </div>
+        <div>
+          <ng-container *ngIf="!u._edit; else editRole">
+            <span class="role-pill" [class.admin]="u.role === 'admin'">{{
+              u.role
+            }}</span>
+          </ng-container>
+          <ng-template #editRole>
+            <select [(ngModel)]="u.role">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </ng-template>
+        </div>
+        <div class="actions">
+          <button
+            class="btn btn-secondary"
+            *ngIf="!u._edit"
+            (click)="toggleEdit(u)"
+          >
+            Edit
+          </button>
+          <button class="btn btn-success" *ngIf="u._edit" (click)="saveUser(u)">
+            Save
+          </button>
+          <button class="btn btn-muted" *ngIf="u._edit" (click)="toggleEdit(u)">
+            Cancel
+          </button>
+          <button class="btn btn-danger" (click)="deleteUser(u.id)">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

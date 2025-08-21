@@ -1,13 +1,42 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>QuizmasterPro</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-  <app-root></app-root>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>QuizmasterPro</title>
+    <base href="/" />
+    <script>
+      (function () {
+        try {
+          var p = window.location.pathname || "/";
+          var h = window.location.hash || "";
+          // If hash exists but path isn't root, collapse to just origin + hash
+          if (h.startsWith("#/") && p !== "/") {
+            window.location.replace(window.location.origin + "/" + h);
+            return;
+          }
+          // If no hash and path is not root, convert to hash URL
+          if (p !== "/" && h === "") {
+            var newUrl =
+              window.location.origin + "/#" + p + window.location.search;
+            window.location.replace(newUrl);
+          }
+        } catch (e) {
+          /* noop */
+        }
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
 </html>

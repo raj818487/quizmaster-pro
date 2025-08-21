@@ -1,0 +1,96 @@
+<div class="user-dashboard">
+  <div class="quiz-categories">
+    <div class="category-tabs">
+      <button
+        class="tab-button"
+        [class.active]="activeCategory === 'all'"
+        (click)="setActiveCategory('all')"
+      >
+        All Quizzes
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeCategory === 'my'"
+        (click)="setActiveCategory('my')"
+      >
+        My Quizzes
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeCategory === 'public'"
+        (click)="setActiveCategory('public')"
+      >
+        Public Quizzes
+      </button>
+    </div>
+  </div>
+
+  <div class="quizzes-grid">
+    <div *ngFor="let quiz of filteredQuizzes" class="quiz-card">
+      <div class="quiz-header">
+        <h3>{{ quiz.title }}</h3>
+        <div class="quiz-badges">
+          <span
+            class="badge"
+            [class.public]="quiz.is_public"
+            [class.private]="!quiz.is_public"
+          >
+            {{ quiz.is_public ? 'Public' : 'Private' }}
+          </span>
+          <span
+            class="time-badge"
+            *ngIf="quiz.time_limit && quiz.time_limit > 0"
+          >
+            {{ quiz.time_limit }} min
+          </span>
+        </div>
+      </div>
+
+      <div class="quiz-description">
+        <p>{{ quiz.description || 'No description available' }}</p>
+      </div>
+
+      <div class="quiz-meta">
+        <div class="quiz-stats">
+          <span class="stat">
+            <i class="icon">📝</i>
+            Questions available
+          </span>
+          <span class="stat" *ngIf="quiz.user_permission">
+            <i class="icon">👤</i>
+            {{ quiz.user_permission }}
+          </span>
+        </div>
+      </div>
+
+      <div class="quiz-actions">
+        <button class="btn btn-primary" (click)="startQuiz(quiz)">
+          Start Quiz
+        </button>
+        <button class="btn btn-secondary" (click)="viewQuizDetails(quiz)">
+          View Details
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="filteredQuizzes.length === 0" class="no-quizzes">
+    <div class="empty-state">
+      <div class="empty-icon">📚</div>
+      <h3>No quizzes available</h3>
+      <p>{{ getEmptyMessage() }}</p>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading quizzes...</p>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="loadQuizzes()">Retry</button>
+  </div>
+</div>

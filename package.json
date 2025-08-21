@@ -3,24 +3,39 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "node simple-unified-server.js",
+    "start:api": "node simple-unified-server.js",
+    "start:unified": "node simple-unified-server.js",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
+    "dev": "npm run build && npm run start:unified",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:quizmaster-pro": "node dist/quizmaster-pro/server/server.mjs"
+    "test": "ng test"
   },
   "private": true,
   "dependencies": {
+    "@angular/cdk": "^20.1.6",
     "@angular/common": "^20.0.0",
     "@angular/compiler": "^20.0.0",
     "@angular/core": "^20.0.0",
     "@angular/forms": "^20.0.0",
+    "@angular/material": "^20.1.6",
     "@angular/platform-browser": "^20.0.0",
-    "@angular/platform-server": "^20.0.0",
     "@angular/router": "^20.0.0",
-    "@angular/ssr": "^20.0.1",
+    "@fontsource/inter": "^5.2.6",
+    "@libsql/client": "^0.10.0",
+    "@primeng/themes": "^20.0.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.2.0",
+    "dotenv": "^16.4.5",
+    "electron": "^37.3.1",
     "express": "^5.1.0",
+    "papaparse": "^5.5.3",
+    "pdfmake": "^0.2.20",
+    "primeicons": "^7.0.0",
+    "primeng": "^20.0.1",
     "rxjs": "~7.8.0",
+    "sqlite3": "^5.1.7",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -36,6 +51,6 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.8.2"
+    "typescript": "^5.8.2"
   }
 }

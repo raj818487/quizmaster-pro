@@ -1,0 +1,11 @@
+<div class="db-mgmt">
+  <h2>Database Management</h2>
+  <div class="card">
+    <div><strong>Mode:</strong> {{ status?.dbMode }}</div>
+    <div><strong>Initialized:</strong> {{ status?.initialized }}</div>
+    <div><strong>Schema Version:</strong> {{ status?.schemaVersion }}</div>
+    <div><strong>Tables:</strong> {{ status?.tables?.join(", ") }}</div>
+  </div>
+
+  <!-- DB management removed -->
+</div>

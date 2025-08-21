@@ -1,1 +1,305 @@
-/* You can add global styles to this file, and also import other style files */
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use "@angular/material" as mat;
+
+// PrimeNG v20+ Theme Imports
+@import "primeicons/primeicons.css";
+@import url("@fontsource/inter/index.css");
+
+// Design System Variables
+$primary: #6366f1;
+$primary-light: #818cf8;
+$primary-dark: #4f46e5;
+$secondary: #ec4899;
+$success: #10b981;
+$warning: #f59e0b;
+$error: #ef4444;
+$background: #f8fafc;
+$surface: #ffffff;
+$surface-hover: #f1f5f9;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$border: #e2e8f0;
+$shadow: rgba(0, 0, 0, 0.1);
+
+html {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+// Global Styles
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  background: white;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  color: $text-primary;
+  line-height: 1.6;
+}
+
+// Button Styles
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.btn-primary {
+    background: #3b82f6;
+    color: white;
+
+    &:hover {
+      background: #2563eb;
+    }
+  }
+
+  &.btn-secondary {
+    background: $surface;
+    color: $text-primary;
+    border: 1px solid $border;
+
+    &:hover {
+      background: $surface-hover;
+    }
+  }
+
+  &.btn-success {
+    background: #10b981;
+    color: white;
+
+    &:hover {
+      background: #059669;
+    }
+  }
+
+  &.btn-danger {
+    background: #ef4444;
+    color: white;
+
+    &:hover {
+      background: #dc2626;
+    }
+  }
+}
+
+// Card Styles
+.card {
+  background: $surface;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px $shadow, 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid $border;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 10px 25px -3px $shadow, 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid $border;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .card-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid $border;
+    background: $background;
+  }
+}
+
+// Form Styles
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid $border;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: $surface;
+
+  &:focus {
+    outline: none;
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  &::placeholder {
+    color: $text-secondary;
+  }
+}
+
+// Grid System
+.grid {
+  display: grid;
+  gap: 1.5rem;
+
+  &.grid-cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  &.grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  &.grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    &.grid-cols-2,
+    &.grid-cols-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// Utility Classes
+.text-center {
+  text-align: center;
+}
+.text-primary {
+  color: $primary;
+}
+.text-secondary {
+  color: $text-secondary;
+}
+.text-success {
+  color: $success;
+}
+.text-warning {
+  color: $warning;
+}
+.text-error {
+  color: $error;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+.mb-8 {
+  margin-bottom: 2rem;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.mt-3 {
+  margin-top: 0.75rem;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
+.mt-6 {
+  margin-top: 1.5rem;
+}
+.mt-8 {
+  margin-top: 2rem;
+}
+
+// Loading Animation
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive Design
+@media (max-width: 640px) {
+  body {
+    padding: 10px;
+  }
+
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.mat-primary {
+  background-color: $primary !important;
+}
+.mat-accent {
+  background-color: $secondary !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
