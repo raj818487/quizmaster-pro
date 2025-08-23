@@ -7,9 +7,7 @@
     "start:api": "node simple-unified-server.js",
     "start:unified": "node simple-unified-server.js",
     "build": "ng build",
-    "build:prod": "ng build --configuration production",
-    "build:netlify": "ng build --configuration production --base-href=/",
-    "postinstall": "npm install @angular/animations@^20.0.0 --legacy-peer-deps --no-save",
+    "build:prod": "ng build --configuration production --base-href=/",
     "dev": "npm run build && npm run start:unified",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -44,7 +42,7 @@
     "typescript": "^5.8.2"
   },
   "engines": {
-    "node": ">=20.19.0 <21.0.0",
+    "node": ">=20.0.0",
     "npm": ">=10.0.0"
   }
 }

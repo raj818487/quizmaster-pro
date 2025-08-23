@@ -30,7 +30,7 @@
               "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
-            "outputPath": "dist/quizmaster-pro/browser"
+            "outputPath": "dist/quizmaster-pro"
           },
           "configurations": {
             "production": {
