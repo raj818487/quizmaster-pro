@@ -1,6 +1,11 @@
 [build]
-  command = "npm run build"
+  command = "npm run build:netlify"
   publish = "dist/quizmaster-pro/browser"
 
 [[plugins]]
   package = "@netlify/angular-runtime"
+  
+# Environment variables for build
+[build.environment]
+  NODE_VERSION = "20.x"
+  NPM_FLAGS = "--legacy-peer-deps"
