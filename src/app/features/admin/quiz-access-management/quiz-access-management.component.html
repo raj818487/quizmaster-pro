@@ -1,0 +1,320 @@
+<div class="quiz-access-management">
+  <!-- User Selection Section -->
+  <div class="user-selection-card">
+    <h2>👤 Select User</h2>
+    <div class="user-selector">
+      <select
+        [value]="selectedUserId() || ''"
+        (change)="onUserChange($event)"
+        class="user-dropdown"
+      >
+        <option value="">-- Choose a User --</option>
+        @for (user of users(); track user.id) {
+        <option [value]="user.id">
+          {{ user.username }}
+        </option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Main Content - Only show when user is selected -->
+  @if (selectedUserId() && selectedUser()) {
+  <!-- Summary Section -->
+  <div class="summary-section">
+    <h2>📊 Assignment Summary for {{ selectedUser()?.username }}</h2>
+    <div class="summary-cards">
+      <div class="summary-card total">
+        <div class="card-icon">📚</div>
+        <div class="card-content">
+          <div class="count">{{ assignmentSummary().totalQuizzes }}</div>
+          <div class="label">Total Quizzes</div>
+        </div>
+      </div>
+
+      <div class="summary-card assigned">
+        <div class="card-icon">✅</div>
+        <div class="card-content">
+          <div class="count">{{ assignmentSummary().totalAssigned }}</div>
+          <div class="label">Assigned</div>
+        </div>
+      </div>
+
+      <div class="summary-card accessible">
+        <div class="card-icon">🔓</div>
+        <div class="card-content">
+          <div class="count">{{ assignmentSummary().totalAccessible }}</div>
+          <div class="label">Accessible</div>
+        </div>
+      </div>
+
+      <div class="summary-card pending">
+        <div class="card-icon">⏳</div>
+        <div class="card-content">
+          <div class="count">{{ assignmentSummary().totalPending }}</div>
+          <div class="label">Pending Access</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Actions -->
+  <div class="bulk-actions-section">
+    <h3>🔧 Bulk Actions</h3>
+    <div class="bulk-buttons">
+      <button class="bulk-btn assign-all" (click)="assignAllQuizzes()">
+        <span class="icon">📋</span>
+        Assign All Quizzes
+      </button>
+      <button class="bulk-btn unassign-all" (click)="unassignAllQuizzes()">
+        <span class="icon">❌</span>
+        Unassign All Quizzes
+      </button>
+      <button class="bulk-btn enable-all" (click)="enableAllAccess()">
+        <span class="icon">🔓</span>
+        Enable All Access
+      </button>
+      <button class="bulk-btn disable-all" (click)="disableAllAccess()">
+        <span class="icon">🔒</span>
+        Disable All Access
+      </button>
+    </div>
+  </div>
+
+  <!-- Access Requests Section -->
+  <div class="access-requests-section">
+    <div class="section-header">
+      <h3>
+        <span class="icon">🔐</span> 
+        Access Requests 
+        @if (allPendingRequests().length > 0) {
+          <span class="request-count">{{ allPendingRequests().length }}</span>
+        }
+      </h3>
+      
+      <div class="tabs">
+        <button 
+          class="tab" 
+          [class.active]="activeTab() === 'assignments'" 
+          (click)="activeTab.set('assignments')"
+        >
+          Quiz Assignments
+        </button>
+        <button 
+          class="tab" 
+          [class.active]="activeTab() === 'requests'" 
+          (click)="activeTab.set('requests')"
+        >
+          Pending Requests
+          @if (allPendingRequests().length > 0) {
+            <span class="badge">{{ allPendingRequests().length }}</span>
+          }
+        </button>
+      </div>
+    </div>
+    
+    <!-- User-specific pending requests -->
+    @if (activeTab() === 'assignments' && userPendingRequests().length > 0) {
+      <div class="user-pending-requests">
+        <div class="pending-notice">
+          <span class="notice-icon">⚠️</span>
+          <span class="notice-text">
+            This user has {{ userPendingRequests().length }} pending access {{ userPendingRequests().length === 1 ? 'request' : 'requests' }}
+          </span>
+          <button class="view-btn" (click)="activeTab.set('requests')">View Requests</button>
+        </div>
+      </div>
+    }
+    
+    <!-- All pending requests tab -->
+    @if (activeTab() === 'requests') {
+      <div class="requests-table-container">
+        @if (allPendingRequests().length === 0) {
+          <div class="empty-requests">
+            <div class="empty-icon">✅</div>
+            <p>No pending access requests</p>
+          </div>
+        } @else {
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Quiz</th>
+                <th>Requested</th>
+                <th>Message</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (request of allPendingRequests(); track request.id) {
+                <tr>
+                  <td>{{ getUserName(request.user_id) }}</td>
+                  <td>{{ getQuizTitle(request.quiz_id) }}</td>
+                  <td>{{ request.requested_at | date:'short' }}</td>
+                  <td>{{ request.message || 'No message provided' }}</td>
+                  <td class="action-buttons">
+                    <button class="approve-btn" (click)="approveAccessRequest(request.id!, request.user_id, request.quiz_id)">
+                      Approve
+                    </button>
+                    <button class="reject-btn" (click)="rejectAccessRequest(request.id!)">
+                      Reject
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <div class="table-footer">
+            <button class="back-btn" (click)="activeTab.set('assignments')">
+              ← Back to Assignments
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Search and Filters - Only show in assignments tab -->
+  @if (activeTab() === 'assignments') {
+  <div class="filters-section">
+    <h3>🔍 Search & Filter</h3>
+    <div class="filters-controls">
+      <div class="search-box">
+        <input
+          type="text"
+          placeholder="Search quizzes by title or description..."
+          [value]="searchTerm()"
+          (input)="onSearchChange($event)"
+          class="search-input"
+        />
+        <span class="search-icon">🔍</span>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Quiz Assignment Table - Only show in assignments tab -->
+  @if (activeTab() === 'assignments') {
+  <div class="quiz-table-section">
+    <h3>📝 Quiz Assignments</h3>
+    <div class="table-container">
+      <table class="quiz-table">
+        <thead>
+          <tr>
+            <th>Quiz Title</th>
+            <th>Assignment Status</th>
+            <th>Access Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (quiz of filteredQuizzes(); track quiz.id) { @if (quiz.id) {
+          <tr [class]="getQuizStatusClass(quiz.id)">
+            <td class="quiz-title">
+              <div class="title-content">
+                <h4>{{ quiz.title }}</h4>
+                <p class="description">{{ quiz.description }}</p>
+              </div>
+            </td>
+
+            <td class="assignment-status">
+              @if (isQuizAssigned(quiz.id)) {
+              <span class="status-badge assigned">
+                <span class="icon">✅</span>
+                Assigned
+              </span>
+              } @else {
+              <span class="status-badge unassigned">
+                <span class="icon">⭕</span>
+                Not Assigned
+              </span>
+              }
+            </td>
+
+            <td class="access-status">
+              @if (isQuizAssigned(quiz.id) && hasQuizAccess(quiz.id)) {
+              <span class="status-badge accessible">
+                <span class="icon">🔓</span>
+                Accessible
+              </span>
+              } @else if (isQuizAssigned(quiz.id)) {
+              <span class="status-badge pending">
+                <span class="icon">🚫</span>
+                Access Disabled
+              </span>
+              } @else {
+              <span class="status-badge disabled">
+                <span class="icon">🔒</span>
+                No Access
+              </span>
+              }
+            </td>
+
+            <td class="actions">
+              <div class="action-controls">
+                <!-- Assignment Toggle -->
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    [checked]="isQuizAssigned(quiz.id)"
+                    (change)="toggleAssignment(quiz.id)"
+                  />
+                  <span class="toggle-slider assign"></span>
+                  <span class="toggle-label">Assign</span>
+                </label>
+
+                <!-- Access Toggle -->
+                <label
+                  class="toggle-switch"
+                  [class.disabled]="!isQuizAssigned(quiz.id)"
+                >
+                  <input
+                    type="checkbox"
+                    [checked]="hasQuizAccess(quiz.id)"
+                    [disabled]="!isQuizAssigned(quiz.id)"
+                    (change)="toggleAccess(quiz.id)"
+                  />
+                  <span class="toggle-slider access"></span>
+                  <span class="toggle-label">Access</span>
+                </label>
+              </div>
+            </td>
+          </tr>
+          } }
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      @if (filteredQuizzes().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>No quizzes found</h3>
+        <p>Try adjusting your search terms or filters</p>
+      </div>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- No User Selected State -->
+  @if (!selectedUserId()) {
+  <div class="no-user-selected">
+    <div class="empty-state">
+      <div class="empty-icon">👤</div>
+      <h3>No User Selected</h3>
+      <p>
+        Please select a user from the dropdown above to manage their quiz
+        assignments
+      </p>
+    </div>
+  </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+  <div class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>Loading quiz data...</p>
+  </div>
+  }
+}

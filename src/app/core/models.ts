@@ -18,6 +18,9 @@ export interface Quiz {
   is_public?: boolean;
   time_limit?: number;
   user_permission?: 'owner' | 'edit' | 'view';
+  has_access?: boolean | number; // For quiz assignment API responses (can be 0/1 from SQLite)
+  is_assigned?: boolean | number; // For quiz assignment API responses (can be 0/1 from SQLite)
+  assigned_at?: string; // When the quiz was assigned
 }
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'text';

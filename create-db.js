@@ -71,6 +71,25 @@ db.exec(`
   )
 `);
 
+// Create quiz_assignments table for managing quiz access
+db.exec(`
+  CREATE TABLE IF NOT EXISTS quiz_assignments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    quiz_id INTEGER NOT NULL,
+    is_assigned BOOLEAN DEFAULT FALSE,
+    has_access BOOLEAN DEFAULT FALSE,
+    assigned_at DATETIME,
+    assigned_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(id),
+    UNIQUE(user_id, quiz_id)
+  )
+`);
+
 // Insert default admin user
 const insertUser = db.prepare(`
   INSERT OR REPLACE INTO users (id, username, password, role) 

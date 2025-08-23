@@ -5,8 +5,7 @@ import { AdminPage } from './features/admin/admin-page/admin-page';
 import { DashboardPage } from './features/dashboard/dashboard-page/dashboard-page';
 import { UserDashboardPage } from './features/user-dashboard/user-dashboard-page';
 import { ManageUsersComponent } from './features/admin/manage-users/manage-users.component';
-// Temporarily commenting out until module issue is resolved
-// import { QuizManagementComponent } from './features/admin/quiz-management/quiz-management.component';
+import { QuizAccessManagementComponent } from './features/admin/quiz-access-management/quiz-access-management.component';
 
 function adminGuard() {
   // lightweight inline guard; replace with proper CanActivate if needed
@@ -24,11 +23,14 @@ export const routes: Routes = [
   { path: 'quiz/:id', component: QuizPageComponent },
   { path: 'auth', component: AuthPage },
   { path: 'admin', component: AdminPage },
-  // Temporarily disabled until module issue is resolved
-  // { path: 'admin/quiz-management', component: QuizManagementComponent, canActivate: [adminGuard] as any },
   {
     path: 'admin/manage-users',
     component: ManageUsersComponent,
+    canActivate: [adminGuard] as any,
+  },
+  {
+    path: 'admin/quiz-access',
+    component: QuizAccessManagementComponent,
     canActivate: [adminGuard] as any,
   },
   { path: 'dashboard', component: DashboardPage },

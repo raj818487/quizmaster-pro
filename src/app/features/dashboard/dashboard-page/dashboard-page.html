@@ -1,142 +1,165 @@
 <div class="dashboard-container">
   <!-- Loading State -->
   @if (isLoading) {
-    <div class="loading-state">
-      <div class="loading-spinner"></div>
-      <p>Loading dashboard data...</p>
-    </div>
+  <div class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading dashboard data...</p>
+  </div>
   }
 
   <!-- Dashboard Content -->
   @if (!isLoading) {
-    <!-- Stats Cards -->
-    <div class="dashboard-stats">
-      <div class="stat-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-content">
-          <h3>{{ stats.totalQuizzes }}</h3>
-          <p>Total Quizzes</p>
-          <span class="stat-trend positive">+{{ getQuizGrowth() }} this week</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">👥</div>
-        <div class="stat-content">
-          <h3>{{ stats.activeUsers }}</h3>
-          <p>Active Users</p>
-          <span class="stat-trend positive">+{{ getUserGrowth() }} new users</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-content">
-          <h3>{{ stats.totalAttempts }}</h3>
-          <p>Quiz Attempts</p>
-          <span class="stat-trend positive">{{ getAttemptGrowth() }}% growth</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">⚡</div>
-        <div class="stat-content">
-          <h3>{{ stats.successRate }}%</h3>
-          <p>Success Rate</p>
-          <span class="stat-trend positive">Above average</span>
-        </div>
+  <!-- Stats Cards -->
+  <div class="dashboard-stats">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-content">
+        <h3>{{ stats.totalQuizzes }}</h3>
+        <p>Total Quizzes</p>
+        <span class="stat-trend positive"
+          >+{{ getQuizGrowth() }} this week</span
+        >
       </div>
     </div>
 
-    <!-- Main Dashboard Content -->
-    <div class="dashboard-content">
-      <!-- Recent Activity -->
-      <div class="activity-card card">
-        <div class="card-header">
-          <h3>📈 Recent Activity</h3>
-          <button class="btn btn-link" (click)="navigateToReports()">View All</button>
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-content">
+        <h3>{{ stats.activeUsers }}</h3>
+        <p>Active Users</p>
+        <span class="stat-trend positive"
+          >+{{ getUserGrowth() }} new users</span
+        >
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-content">
+        <h3>{{ stats.totalAttempts }}</h3>
+        <p>Quiz Attempts</p>
+        <span class="stat-trend positive"
+          >{{ getAttemptGrowth() }}% growth</span
+        >
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-content">
+        <h3>{{ stats.successRate }}%</h3>
+        <p>Success Rate</p>
+        <span class="stat-trend positive">Above average</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard Content -->
+  <div class="dashboard-content">
+    <!-- Recent Activity -->
+    <div class="activity-card card">
+      <div class="card-header">
+        <h3>📈 Recent Activity</h3>
+        <button class="btn btn-link" (click)="navigateToReports()">
+          View All
+        </button>
+      </div>
+      <div class="card-body">
+        @if (recentActivity.length === 0) {
+        <div class="empty-activity">
+          <div class="empty-icon">📭</div>
+          <p>No recent activity to show</p>
         </div>
-        <div class="card-body">
-          @if (recentActivity.length === 0) {
-            <div class="empty-activity">
-              <div class="empty-icon">📭</div>
-              <p>No recent activity to show</p>
+        } @if (recentActivity.length > 0) {
+        <ul class="activity-list">
+          @for (activity of recentActivity; track activity.id) {
+          <li class="activity-item">
+            <div class="activity-icon">{{ activity.icon }}</div>
+            <div class="activity-content">
+              <span class="activity-message">{{ activity.message }}</span>
+              <span class="activity-time"
+                >{{ getTimeAgo(activity.timestamp) }}</span
+              >
             </div>
+          </li>
           }
-          @if (recentActivity.length > 0) {
-            <ul class="activity-list">
-              @for (activity of recentActivity; track activity.id) {
-                <li class="activity-item">
-                  <div class="activity-icon">{{ activity.icon }}</div>
-                  <div class="activity-content">
-                    <span class="activity-message">{{ activity.message }}</span>
-                    <span class="activity-time">{{ getTimeAgo(activity.timestamp) }}</span>
-                  </div>
-                </li>
-              }
-            </ul>
-          }
-        </div>
+        </ul>
+        }
       </div>
+    </div>
 
-      <!-- Quick Actions -->
-      <div class="quick-actions card">
-        <div class="card-header">
-          <h3>⚡ Quick Actions</h3>
-          <p class="card-subtitle">Manage your quiz platform</p>
-        </div>
-        <div class="card-body">
-          <div class="action-grid">
-            <button class="action-btn primary" (click)="navigateToCreateQuiz()">
-              <div class="action-icon">➕</div>
-              <div class="action-content">
-                <h4>Create Quiz</h4>
-                <p>Build new quiz</p>
-              </div>
-            </button>
+    <!-- Quick Actions -->
+    <div class="quick-actions card">
+      <div class="card-header">
+        <h3>⚡ Quick Actions</h3>
+        <p class="card-subtitle">Manage your quiz platform</p>
+      </div>
+      <div class="card-body">
+        <div class="action-grid">
+          <button class="action-btn primary" (click)="navigateToCreateQuiz()">
+            <div class="action-icon">➕</div>
+            <div class="action-content">
+              <h4>Create Quiz</h4>
+              <p>Build new quiz</p>
+            </div>
+          </button>
 
-            <button class="action-btn secondary" (click)="navigateToQuizManagement()">
-              <div class="action-icon">📝</div>
-              <div class="action-content">
-                <h4>Manage Quizzes</h4>
-                <p>Edit & organize</p>
-              </div>
-            </button>
+          <button
+            class="action-btn secondary"
+            (click)="navigateToQuizManagement()"
+          >
+            <div class="action-icon">📝</div>
+            <div class="action-content">
+              <h4>Manage Quizzes</h4>
+              <p>Edit & organize</p>
+            </div>
+          </button>
 
-            <button class="action-btn secondary" (click)="navigateToUserManagement()">
-              <div class="action-icon">👥</div>
-              <div class="action-content">
-                <h4>Manage Users</h4>
-                <p>User accounts</p>
-              </div>
-            </button>
+          <button
+            class="action-btn secondary"
+            (click)="navigateToUserManagement()"
+          >
+            <div class="action-icon">👥</div>
+            <div class="action-content">
+              <h4>Manage Users</h4>
+              <p>User accounts</p>
+            </div>
+          </button>
 
-            <button class="action-btn tertiary" (click)="navigateToTakeQuiz()">
-              <div class="action-icon">🎮</div>
-              <div class="action-content">
-                <h4>Take Quiz</h4>
-                <p>Test experience</p>
-              </div>
-            </button>
+          <button class="action-btn secondary" (click)="navigateToQuizAccess()">
+            <div class="action-icon">🔐</div>
+            <div class="action-content">
+              <h4>Quiz Access</h4>
+              <p>Permissions & visibility</p>
+            </div>
+          </button>
 
-            <button class="action-btn tertiary" (click)="navigateToReports()">
-              <div class="action-icon">📊</div>
-              <div class="action-content">
-                <h4>View Reports</h4>
-                <p>Analytics & stats</p>
-              </div>
-            </button>
+          <button class="action-btn tertiary" (click)="navigateToTakeQuiz()">
+            <div class="action-icon">🎮</div>
+            <div class="action-content">
+              <h4>Take Quiz</h4>
+              <p>Test experience</p>
+            </div>
+          </button>
 
-            <button class="action-btn tertiary" (click)="navigateToSettings()">
-              <div class="action-icon">⚙️</div>
-              <div class="action-content">
-                <h4>Settings</h4>
-                <p>Configuration</p>
-              </div>
-            </button>
-          </div>
+          <button class="action-btn tertiary" (click)="navigateToReports()">
+            <div class="action-icon">📊</div>
+            <div class="action-content">
+              <h4>View Reports</h4>
+              <p>Analytics & stats</p>
+            </div>
+          </button>
+
+          <button class="action-btn tertiary" (click)="navigateToSettings()">
+            <div class="action-icon">⚙️</div>
+            <div class="action-content">
+              <h4>Settings</h4>
+              <p>Configuration</p>
+            </div>
+          </button>
         </div>
       </div>
     </div>
+  </div>
   }
 </div>

@@ -1,79 +1,350 @@
-<div class="manage-users-container">
-  <h2>Manage Users</h2>
-
-  <section class="create-user card">
-    <h3>Create User</h3>
-    <div class="form-row">
-      <input [(ngModel)]="newUsername" placeholder="Username" />
-      <input [(ngModel)]="newPassword" placeholder="Password" type="password" />
-      <select [(ngModel)]="newRole">
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-      </select>
-      <button class="btn btn-primary" (click)="addUser()">Add</button>
+<div class="user-access-management">
+  <!-- Header Section -->
+  <div class="management-header">
+    <div class="header-content">
+      <h2>👥 User Access Management</h2>
+      <p>Manage user accounts, roles, and access permissions</p>
     </div>
-  </section>
-
-  <section class="users-list card">
-    <div class="header">
-      <h3>All Users</h3>
-      <span *ngIf="loading">Loading...</span>
-    </div>
-    <div class="table">
-      <div class="table-row table-header">
-        <div>ID</div>
-        <div>Username</div>
-        <div>Role</div>
-        <div class="actions">Actions</div>
+    <div class="header-stats">
+      <div class="stat-item">
+        <span class="stat-number">{{ users.length }}</span>
+        <span class="stat-label">Total Users</span>
       </div>
+      <div class="stat-item">
+        <span class="stat-number">{{ getAdminCount() }}</span>
+        <span class="stat-label">Admins</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">{{ getActiveUsersCount() }}</span>
+        <span class="stat-label">Active Users</span>
+      </div>
+    </div>
+  </div>
 
-      <div class="table-row" *ngFor="let u of users">
-        <div>{{ u.id }}</div>
-        <div>
-          <ng-container *ngIf="!u._edit; else editUser">
-            {{ u.username }}
-          </ng-container>
-          <ng-template #editUser>
-            <input [(ngModel)]="u.username" />
+  <!-- Quick Actions -->
+  <div class="quick-actions-bar">
+    <button
+      class="btn btn-primary"
+      (click)="showCreateUser = true"
+      [disabled]="showCreateUser"
+    >
+      <i class="icon">➕</i> Add New User
+    </button>
+    <button class="btn btn-secondary" (click)="exportUsers()">
+      <i class="icon">📊</i> Export Users
+    </button>
+    <button class="btn btn-secondary" (click)="refreshUsers()">
+      <i class="icon">🔄</i> Refresh
+    </button>
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Search users..."
+        [(ngModel)]="searchTerm"
+        (input)="filterUsers()"
+        class="search-input"
+      />
+      <i class="search-icon">🔍</i>
+    </div>
+  </div>
+
+  <!-- Create User Form -->
+  @if (showCreateUser) {
+  <div class="create-user-card card">
+    <div class="card-header">
+      <h3>🆕 Create New User</h3>
+      <button class="btn btn-link" (click)="cancelCreateUser()">
+        ✕ Cancel
+      </button>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="createUser()" #userForm="ngForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="username">Username *</label>
             <input
-              [(ngModel)]="u._password"
-              type="password"
-              placeholder="New password (optional)"
+              type="text"
+              id="username"
+              [(ngModel)]="newUser.username"
+              name="username"
+              placeholder="Enter username"
+              required
+              #usernameField="ngModel"
             />
-          </ng-template>
-        </div>
-        <div>
-          <ng-container *ngIf="!u._edit; else editRole">
-            <span class="role-pill" [class.admin]="u.role === 'admin'">{{
-              u.role
-            }}</span>
-          </ng-container>
-          <ng-template #editRole>
-            <select [(ngModel)]="u.role">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+            @if (usernameField.invalid && usernameField.touched) {
+            <div class="error-message">Username is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password *</label>
+            <input
+              type="password"
+              id="password"
+              [(ngModel)]="newUser.password"
+              name="password"
+              placeholder="Enter password"
+              required
+              #passwordField="ngModel"
+            />
+            @if (passwordField.invalid && passwordField.touched) {
+            <div class="error-message">Password is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="role">Role *</label>
+            <select id="role" [(ngModel)]="newUser.role" name="role" required>
+              <option value="user">👤 Regular User</option>
+              <option value="admin">👑 Administrator</option>
             </select>
-          </ng-template>
+          </div>
         </div>
-        <div class="actions">
+
+        <div class="form-actions">
           <button
-            class="btn btn-secondary"
-            *ngIf="!u._edit"
-            (click)="toggleEdit(u)"
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="userForm.invalid || creating"
           >
-            Edit
+            @if (creating) {
+            <i class="icon spinning">⏳</i> Creating... } @else {
+            <i class="icon">✨</i> Create User }
           </button>
-          <button class="btn btn-success" *ngIf="u._edit" (click)="saveUser(u)">
-            Save
-          </button>
-          <button class="btn btn-muted" *ngIf="u._edit" (click)="toggleEdit(u)">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cancelCreateUser()"
+          >
             Cancel
           </button>
-          <button class="btn btn-danger" (click)="deleteUser(u.id)">
-            Delete
+        </div>
+      </form>
+    </div>
+  </div>
+  }
+
+  <!-- Users Table -->
+  <div class="users-table-card card">
+    <div class="card-header">
+      <h3>📋 Users Directory</h3>
+      <div class="table-controls">
+        <select
+          [(ngModel)]="filterRole"
+          (change)="filterUsers()"
+          class="filter-select"
+        >
+          <option value="">All Roles</option>
+          <option value="admin">👑 Admins</option>
+          <option value="user">👤 Users</option>
+        </select>
+        <select
+          [(ngModel)]="filterStatus"
+          (change)="filterUsers()"
+          class="filter-select"
+        >
+          <option value="">All Status</option>
+          <option value="active">✅ Active</option>
+          <option value="inactive">❌ Inactive</option>
+          <option value="suspended">🚫 Suspended</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card-body">
+      @if (loading) {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading users...</p>
+      </div>
+      } @else { @if (filteredUsers.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <h4>No Users Found</h4>
+        <p>No users match your current filters.</p>
+      </div>
+      } @else {
+      <div class="users-table">
+        <div class="table-header">
+          <div class="table-cell">User Info</div>
+          <div class="table-cell">Role & Status</div>
+          <div class="table-cell">Permissions</div>
+          <div class="table-cell">Last Activity</div>
+          <div class="table-cell">Actions</div>
+        </div>
+
+        @for (user of filteredUsers; track user.id) {
+        <div class="table-row" [class.editing]="user._editing">
+          <!-- User Info -->
+          <div class="table-cell user-info">
+            @if (!user._editing) {
+            <div class="user-avatar">{{ getUserInitials(user.username) }}</div>
+            <div class="user-details">
+              <div class="user-name">{{ user.username }}</div>
+              <div class="user-email">{{ user.email || "No email" }}</div>
+              <div class="user-id">ID: {{ user.id }}</div>
+            </div>
+            } @else {
+            <div class="edit-form">
+              <input
+                [(ngModel)]="user.username"
+                placeholder="Username"
+                class="edit-input"
+              />
+              <input
+                [(ngModel)]="user.email"
+                placeholder="Email"
+                class="edit-input"
+              />
+            </div>
+            }
+          </div>
+
+          <!-- Role & Status -->
+          <div class="table-cell role-status">
+            @if (!user._editing) {
+            <div class="role-badge" [ngClass]="'role-' + user.role">
+              {{ user.role === "admin" ? "👑 Admin" : "👤 User" }}
+            </div>
+            <div
+              class="status-badge"
+              [ngClass]="'status-' + (user.status || 'active')"
+            >
+              {{ getStatusDisplay(user.status || "active") }}
+            </div>
+            } @else {
+            <select [(ngModel)]="user.role" class="edit-select">
+              <option value="user">👤 User</option>
+              <option value="admin">👑 Admin</option>
+            </select>
+            <select [(ngModel)]="user.status" class="edit-select">
+              <option value="active">✅ Active</option>
+              <option value="inactive">❌ Inactive</option>
+              <option value="suspended">🚫 Suspended</option>
+            </select>
+            }
+          </div>
+
+          <!-- Permissions -->
+          <div class="table-cell permissions">
+            @if (!user._editing) {
+            <div class="permission-list">
+              <span
+                class="permission-item"
+                [class.granted]="user.canCreateQuiz !== false"
+              >
+                🎯 Create Quizzes
+              </span>
+              <span
+                class="permission-item"
+                [class.granted]="user.role === 'admin'"
+              >
+                ⚙️ Admin Access
+              </span>
+            </div>
+            } @else {
+            <label class="permission-checkbox">
+              <input type="checkbox" [(ngModel)]="user.canCreateQuiz" />
+              Can create quizzes
+            </label>
+            }
+          </div>
+
+          <!-- Last Activity -->
+          <div class="table-cell activity">
+            <div class="activity-info">
+              <div class="activity-time">{{ getLastActivity(user) }}</div>
+              <div class="activity-status" [class.online]="isUserOnline(user)">
+                {{ isUserOnline(user) ? "🟢 Online" : "⚫ Offline" }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="table-cell actions">
+            @if (!user._editing) {
+            <div class="action-buttons">
+              <button
+                class="btn btn-sm btn-secondary"
+                (click)="editUser(user)"
+                [disabled]="user.role === 'admin' && !currentUserIsAdmin()"
+              >
+                ✏️ Edit
+              </button>
+              <button
+                class="btn btn-sm btn-tertiary"
+                (click)="viewUserActivity(user)"
+              >
+                📊 Activity
+              </button>
+              @if (user.status !== 'suspended') {
+              <button
+                class="btn btn-sm btn-warning"
+                (click)="suspendUser(user)"
+                [disabled]="user.role === 'admin'"
+              >
+                🚫 Suspend
+              </button>
+              } @else {
+              <button
+                class="btn btn-sm btn-success"
+                (click)="activateUser(user)"
+              >
+                ✅ Activate
+              </button>
+              }
+              <button
+                class="btn btn-sm btn-danger"
+                (click)="user.id !== undefined ? deleteUser(user.id) : null"
+                [disabled]="user.role === 'admin' || user.id === undefined"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+            } @else {
+            <div class="edit-actions">
+              <button class="btn btn-sm btn-primary" (click)="saveUser(user)">
+                ✅ Save
+              </button>
+              <button
+                class="btn btn-sm btn-secondary"
+                (click)="cancelEdit(user)"
+              >
+                ❌ Cancel
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <div class="pagination-info">
+          Showing {{ filteredUsers.length }} of {{ users.length }} users
+        </div>
+        <div class="pagination-controls">
+          <button
+            class="btn btn-sm"
+            (click)="previousPage()"
+            [disabled]="currentPage === 1"
+          >
+            ← Previous
+          </button>
+          <span class="page-info"
+            >Page {{ currentPage }} of {{ totalPages }}</span
+          >
+          <button
+            class="btn btn-sm"
+            (click)="nextPage()"
+            [disabled]="currentPage === totalPages"
+          >
+            Next →
           </button>
         </div>
       </div>
+      } }
     </div>
-  </section>
+  </div>
 </div>

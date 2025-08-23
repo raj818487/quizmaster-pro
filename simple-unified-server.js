@@ -64,6 +64,38 @@ const initializeDatabase = () => {
         FOREIGN KEY (attempt_id) REFERENCES quiz_attempts(id) ON DELETE CASCADE,
         FOREIGN KEY (question_id) REFERENCES questions(id)
       );
+
+      CREATE TABLE IF NOT EXISTS quiz_assignments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        quiz_id INTEGER NOT NULL,
+        is_assigned INTEGER DEFAULT 0,
+        has_access INTEGER DEFAULT 0,
+        assigned_at DATETIME,
+        assigned_by INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_by) REFERENCES users(id),
+        UNIQUE(user_id, quiz_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS access_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        quiz_id INTEGER NOT NULL,
+        message TEXT,
+        status TEXT DEFAULT 'pending',
+        requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at DATETIME,
+        reviewed_by INTEGER,
+        response_message TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+        FOREIGN KEY (reviewed_by) REFERENCES users(id),
+        UNIQUE(user_id, quiz_id)
+      );
     `);
 
     // Create default admin user if doesn't exist
@@ -101,6 +133,91 @@ const getQuizById = (id) =>
 const getQuestionsByQuizId = (quizId) =>
   db.prepare("SELECT * FROM questions WHERE quiz_id = ?").all(quizId);
 
+// Quiz Assignment helper functions
+const getQuizAssignments = () =>
+  db.prepare("SELECT * FROM quiz_assignments").all();
+const getAssignmentsByUserId = (userId) =>
+  db.prepare("SELECT * FROM quiz_assignments WHERE user_id = ?").all(userId);
+const getAssignment = (userId, quizId) =>
+  db
+    .prepare("SELECT * FROM quiz_assignments WHERE user_id = ? AND quiz_id = ?")
+    .get(userId, quizId);
+
+// Access request helper functions
+const getAccessRequests = () => db.prepare(`
+  SELECT ar.*, u.username, q.title as quiz_title 
+  FROM access_requests ar
+  JOIN users u ON ar.user_id = u.id
+  JOIN quizzes q ON ar.quiz_id = q.id
+  ORDER BY ar.requested_at DESC
+`).all();
+
+const getAccessRequestsByUserId = (userId) => db.prepare(`
+  SELECT ar.*, q.title as quiz_title 
+  FROM access_requests ar
+  JOIN quizzes q ON ar.quiz_id = q.id
+  WHERE ar.user_id = ?
+  ORDER BY ar.requested_at DESC
+`).all(userId);
+
+const createAccessRequest = (userId, quizId, message) => {
+  return db.prepare(`
+    INSERT OR REPLACE INTO access_requests (user_id, quiz_id, message, status, requested_at)
+    VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP)
+  `).run(userId, quizId, message);
+};
+
+const updateAccessRequest = (requestId, status, reviewedBy, responseMessage) => {
+  return db.prepare(`
+    UPDATE access_requests 
+    SET status = ?, reviewed_by = ?, response_message = ?, reviewed_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(status, reviewedBy, responseMessage, requestId);
+};
+const upsertAssignment = (
+  userId,
+  quizId,
+  isAssigned,
+  hasAccess,
+  assignedBy
+) => {
+  const existing = getAssignment(userId, quizId);
+  if (existing) {
+    return db
+      .prepare(
+        `
+      UPDATE quiz_assignments 
+      SET is_assigned = ?, has_access = ?, assigned_at = ?, assigned_by = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = ? AND quiz_id = ?
+    `
+      )
+      .run(
+        isAssigned,
+        hasAccess,
+        isAssigned ? new Date().toISOString() : null,
+        assignedBy,
+        userId,
+        quizId
+      );
+  } else {
+    return db
+      .prepare(
+        `
+      INSERT INTO quiz_assignments (user_id, quiz_id, is_assigned, has_access, assigned_at, assigned_by)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `
+      )
+      .run(
+        userId,
+        quizId,
+        isAssigned,
+        hasAccess,
+        isAssigned ? new Date().toISOString() : null,
+        assignedBy
+      );
+  }
+};
+
 // MIME types
 const mimeTypes = {
   ".html": "text/html",
@@ -111,6 +228,7 @@ const mimeTypes = {
   ".ico": "image/x-icon",
   ".svg": "image/svg+xml",
   ".json": "application/json",
+  ".webmanifest": "application/manifest+json",
 };
 
 // Read request body
@@ -242,6 +360,24 @@ const handleAPI = async (req, res, parsedUrl) => {
         .prepare("SELECT * FROM quizzes WHERE created_by = ?")
         .all(userId);
       return sendJSON(res, 200, userQuizzes);
+    }
+
+    // User's assigned quizzes with access status
+    if (pathname.match(/^\/api\/users\/\d+\/assigned-quizzes$/) && method === "GET") {
+      const userId = Number(pathname.split("/")[3]);
+      const assignedQuizzes = db
+        .prepare(
+          `
+        SELECT q.*, qa.is_assigned, qa.has_access, qa.assigned_at
+        FROM quizzes q
+        JOIN quiz_assignments qa ON q.id = qa.quiz_id
+        WHERE qa.user_id = ? AND qa.is_assigned = 1
+        ORDER BY q.title ASC
+      `
+        )
+        .all(userId);
+
+      return sendJSON(res, 200, { success: true, quizzes: assignedQuizzes });
     }
 
     // Quiz endpoints
@@ -570,6 +706,193 @@ const handleAPI = async (req, res, parsedUrl) => {
       return sendJSON(res, 200, { totalQuizzes, totalAttempts, averageScore });
     }
 
+    // Quiz Assignments API endpoints
+
+    // GET /api/quiz-assignments - Get all assignments
+    if (pathname === "/api/quiz-assignments" && method === "GET") {
+      const assignments = getQuizAssignments();
+      return sendJSON(res, 200, { success: true, assignments });
+    }
+
+    // GET /api/users/:userId/quiz-assignments - Get assignments for specific user
+    if (
+      pathname.match(/^\/api\/users\/\d+\/quiz-assignments$/) &&
+      method === "GET"
+    ) {
+      const userIdMatch = pathname.match(
+        /\/api\/users\/(\d+)\/quiz-assignments/
+      );
+      const userId = parseInt(userIdMatch[1]);
+      const assignments = getAssignmentsByUserId(userId);
+      return sendJSON(res, 200, { success: true, assignments });
+    }
+
+    // POST /api/quiz-assignments - Create or update assignment
+    if (pathname === "/api/quiz-assignments" && method === "POST") {
+      const { userId, quizId, isAssigned, hasAccess, assignedBy } =
+        await readBody(req);
+
+      if (!userId || !quizId) {
+        return sendJSON(res, 400, {
+          success: false,
+          message: "userId and quizId are required",
+        });
+      }
+
+      try {
+        upsertAssignment(
+          userId,
+          quizId,
+          isAssigned ? 1 : 0,
+          hasAccess ? 1 : 0,
+          assignedBy
+        );
+        const updatedAssignment = getAssignment(userId, quizId);
+        return sendJSON(res, 200, {
+          success: true,
+          message: "Assignment updated successfully",
+          assignment: updatedAssignment,
+        });
+      } catch (error) {
+        return sendJSON(res, 500, {
+          success: false,
+          message: `Failed to update assignment: ${error.message}`,
+        });
+      }
+    }
+
+    // PUT /api/quiz-assignments/bulk - Bulk update assignments for a user
+    if (pathname === "/api/quiz-assignments/bulk" && method === "PUT") {
+      const { userId, assignments, assignedBy } = await readBody(req);
+      if (!userId || !Array.isArray(assignments)) {
+        return sendJSON(res, 400, {
+          success: false,
+          message: "userId and assignments array are required",
+        });
+      }
+
+      let errors = [];
+      let processed = 0;
+      try {
+        assignments.forEach((a, idx) => {
+          if (
+            typeof a.quizId !== "number" ||
+            typeof a.isAssigned !== "boolean" ||
+            typeof a.hasAccess !== "boolean"
+          ) {
+            errors.push(`Assignment at index ${idx} missing required fields.`);
+            return;
+          }
+          try {
+            upsertAssignment(
+              userId,
+              a.quizId,
+              a.isAssigned ? 1 : 0,
+              a.hasAccess ? 1 : 0,
+              assignedBy
+            );
+            processed++;
+          } catch (err) {
+            errors.push(`Assignment at index ${idx} failed: ${err.message}`);
+          }
+        });
+
+        const updatedAssignments = getAssignmentsByUserId(userId);
+        return sendJSON(res, errors.length === 0 ? 200 : 207, {
+          success: errors.length === 0,
+          message:
+            errors.length === 0
+              ? "Bulk assignments updated successfully"
+              : `Some assignments failed: ${errors.join("; ")}`,
+          assignments: updatedAssignments,
+          errors,
+          processed,
+        });
+      } catch (error) {
+        return sendJSON(res, 500, {
+          success: false,
+          message: `Failed to update bulk assignments: ${error.message}`,
+        });
+      }
+    }
+
+    // Access Request API endpoints
+    
+    // GET /api/access-requests - Get all access requests (admin only)
+    if (pathname === "/api/access-requests" && method === "GET") {
+      const requests = getAccessRequests();
+      return sendJSON(res, 200, { success: true, requests });
+    }
+
+    // GET /api/users/:userId/access-requests - Get access requests for specific user
+    if (pathname.match(/^\/api\/users\/\d+\/access-requests$/) && method === "GET") {
+      const userIdMatch = pathname.match(/\/api\/users\/(\d+)\/access-requests/);
+      const userId = parseInt(userIdMatch[1]);
+      const requests = getAccessRequestsByUserId(userId);
+      return sendJSON(res, 200, { success: true, requests });
+    }
+
+    // POST /api/access-requests - Create new access request
+    if (pathname === "/api/access-requests" && method === "POST") {
+      const { userId, quizId, message } = await readBody(req);
+      
+      if (!userId || !quizId) {
+        return sendJSON(res, 400, { 
+          success: false, 
+          message: "userId and quizId are required" 
+        });
+      }
+
+      try {
+        createAccessRequest(userId, quizId, message || '');
+        return sendJSON(res, 200, { 
+          success: true, 
+          message: "Access request submitted successfully"
+        });
+      } catch (error) {
+        return sendJSON(res, 500, { 
+          success: false, 
+          message: `Failed to create access request: ${error.message}` 
+        });
+      }
+    }
+
+    // PUT /api/access-requests/:id - Update access request status (admin only)
+    if (pathname.match(/^\/api\/access-requests\/\d+$/) && method === "PUT") {
+      const requestIdMatch = pathname.match(/\/api\/access-requests\/(\d+)/);
+      const requestId = parseInt(requestIdMatch[1]);
+      const { status, reviewedBy, responseMessage, autoAssign } = await readBody(req);
+      
+      if (!status || !reviewedBy) {
+        return sendJSON(res, 400, { 
+          success: false, 
+          message: "status and reviewedBy are required" 
+        });
+      }
+
+      try {
+        updateAccessRequest(requestId, status, reviewedBy, responseMessage || '');
+        
+        // If approved and autoAssign is true, also create the assignment
+        if (status === 'approved' && autoAssign) {
+          const request = db.prepare("SELECT * FROM access_requests WHERE id = ?").get(requestId);
+          if (request) {
+            upsertAssignment(request.user_id, request.quiz_id, 1, 1, reviewedBy);
+          }
+        }
+        
+        return sendJSON(res, 200, { 
+          success: true, 
+          message: "Access request updated successfully"
+        });
+      } catch (error) {
+        return sendJSON(res, 500, { 
+          success: false, 
+          message: `Failed to update access request: ${error.message}` 
+        });
+      }
+    }
+
     // Default API 404
     return sendJSON(res, 404, {
       success: false,
@@ -597,38 +920,62 @@ const server = http.createServer(async (req, res) => {
     return handleAPI(req, res, parsedUrl);
   }
 
-  // Serve static files
-  const browserDistFolder = path.join(__dirname, "dist/quizmaster-pro");
-  let filePath = path.join(
-    browserDistFolder,
-    pathname === "/" ? "index.html" : pathname
-  );
-
-  // Check if file exists
-  fs.access(filePath, fs.constants.F_OK, (err) => {
-    if (err) {
-      // File doesn't exist, serve index.html (SPA fallback)
-      filePath = path.join(browserDistFolder, "index.html");
-    }
-
-    // Check if index.html exists
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-      if (err) {
-        // Angular app not built
-        setCORSHeaders(res);
-        res.writeHead(404, { "Content-Type": "text/html" });
-        res.end(`
-          <h1>QuizMaster Pro</h1>
-          <p>Angular application not built yet.</p>
-          <p>Run <code>ng build</code> to build the frontend.</p>
-          <p>API is available at <a href="/api/users">/api/*</a></p>
-        `);
+  // Handle PWA files from public folder first
+  if (
+    pathname === "/manifest.json" ||
+    pathname === "/sw.js" ||
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/icon-") ||
+    pathname === "/browserconfig.xml"
+  ) {
+    const publicFilePath = path.join(__dirname, "public", pathname);
+    fs.access(publicFilePath, fs.constants.F_OK, (err) => {
+      if (!err) {
+        serveStaticFile(res, publicFilePath);
         return;
       }
-
-      serveStaticFile(res, filePath);
+      // If not found in public, continue with normal flow
+      serveFromDist();
     });
-  });
+    return;
+  }
+
+  serveFromDist();
+
+  function serveFromDist() {
+    // Serve static files
+    const browserDistFolder = path.join(__dirname, "dist/quizmaster-pro");
+    let filePath = path.join(
+      browserDistFolder,
+      pathname === "/" ? "index.html" : pathname
+    );
+
+    // Check if file exists
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+      if (err) {
+        // File doesn't exist, serve index.html (SPA fallback)
+        filePath = path.join(browserDistFolder, "index.html");
+      }
+
+      // Check if index.html exists
+      fs.access(filePath, fs.constants.F_OK, (err) => {
+        if (err) {
+          // Angular app not built
+          setCORSHeaders(res);
+          res.writeHead(404, { "Content-Type": "text/html" });
+          res.end(`
+            <h1>QuizMaster Pro</h1>
+            <p>Angular application not built yet.</p>
+            <p>Run <code>ng build</code> to build the frontend.</p>
+            <p>API is available at <a href="/api/users">/api/*</a></p>
+          `);
+          return;
+        }
+
+        serveStaticFile(res, filePath);
+      });
+    });
+  }
 });
 
 server.listen(PORT, () => {

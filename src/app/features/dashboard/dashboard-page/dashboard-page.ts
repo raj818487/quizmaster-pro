@@ -31,7 +31,7 @@ export class DashboardPage implements OnInit {
     totalQuizzes: 0,
     activeUsers: 0,
     totalAttempts: 0,
-    successRate: 0
+    successRate: 0,
   };
 
   recentActivity: RecentActivity[] = [];
@@ -50,24 +50,23 @@ export class DashboardPage implements OnInit {
   private async loadDashboardData() {
     try {
       this.isLoading = true;
-      
+
       // Load live data in parallel
       const [quizzes, users] = await Promise.all([
         this.quizService.getAllQuizzes(),
-        this.authService.getAllUsers()
+        this.authService.getAllUsers(),
       ]);
 
       // Update stats with live data
       this.stats = {
         totalQuizzes: quizzes.length,
-        activeUsers: users.filter(user => user.role !== 'admin').length,
+        activeUsers: users.filter((user) => user.role !== 'admin').length,
         totalAttempts: await this.getTotalAttempts(),
-        successRate: await this.calculateSuccessRate()
+        successRate: await this.calculateSuccessRate(),
       };
 
       // Generate recent activity from live data
       this.recentActivity = await this.generateRecentActivity(quizzes, users);
-
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -87,17 +86,20 @@ export class DashboardPage implements OnInit {
     return Math.floor(Math.random() * 30) + 70; // 70-100%
   }
 
-  private async generateRecentActivity(quizzes: Quiz[], users: User[]): Promise<RecentActivity[]> {
+  private async generateRecentActivity(
+    quizzes: Quiz[],
+    users: User[]
+  ): Promise<RecentActivity[]> {
     const activities: RecentActivity[] = [];
-    
+
     // Add recent quiz creations (last 5)
     quizzes.slice(-3).forEach((quiz, index) => {
       activities.push({
         id: index + 1,
         type: 'quiz_created',
         message: `New quiz "${quiz.title}" was created`,
-        timestamp: new Date(Date.now() - (index * 60000)), // Minutes ago
-        icon: '📝'
+        timestamp: new Date(Date.now() - index * 60000), // Minutes ago
+        icon: '📝',
       });
     });
 
@@ -108,8 +110,8 @@ export class DashboardPage implements OnInit {
           id: activities.length + 1,
           type: 'user_registered',
           message: `${user.username} joined the platform`,
-          timestamp: new Date(Date.now() - ((index + 3) * 60000)),
-          icon: '👤'
+          timestamp: new Date(Date.now() - (index + 3) * 60000),
+          icon: '👤',
         });
       }
     });
@@ -119,14 +121,18 @@ export class DashboardPage implements OnInit {
       activities.push({
         id: activities.length + 1,
         type: 'quiz_completed',
-        message: `Quiz completed with ${Math.floor(Math.random() * 30) + 70}% score`,
-        timestamp: new Date(Date.now() - ((i + 5) * 60000)),
-        icon: '🎯'
+        message: `Quiz completed with ${
+          Math.floor(Math.random() * 30) + 70
+        }% score`,
+        timestamp: new Date(Date.now() - (i + 5) * 60000),
+        icon: '🎯',
       });
     }
 
     // Sort by timestamp (newest first) and limit to 5
-    return activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 5);
+    return activities
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 5);
   }
 
   // Quick action navigation methods
@@ -139,7 +145,11 @@ export class DashboardPage implements OnInit {
   }
 
   navigateToUserManagement() {
-    this.router.navigate(['/admin'], { queryParams: { tab: 'users' } });
+    this.router.navigate(['/admin/manage-users']);
+  }
+
+  navigateToQuizAccess() {
+    this.router.navigate(['/admin/quiz-access']);
   }
 
   navigateToReports() {
@@ -159,13 +169,13 @@ export class DashboardPage implements OnInit {
     const now = new Date();
     const diffMs = now.getTime() - timestamp.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
-    
+
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
-    
+
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays}d ago`;
   }
@@ -177,14 +187,18 @@ export class DashboardPage implements OnInit {
 
   // Helper methods for calculations
   getQuizGrowth(): number {
-    return this.stats.totalQuizzes > 0 ? Math.floor(this.stats.totalQuizzes/10) : 0;
+    return this.stats.totalQuizzes > 0
+      ? Math.floor(this.stats.totalQuizzes / 10)
+      : 0;
   }
 
   getUserGrowth(): number {
-    return this.stats.activeUsers > 0 ? Math.floor(this.stats.activeUsers/5) : 0;
+    return this.stats.activeUsers > 0
+      ? Math.floor(this.stats.activeUsers / 5)
+      : 0;
   }
 
   getAttemptGrowth(): number {
-    return Math.floor(this.stats.totalAttempts/10);
+    return Math.floor(this.stats.totalAttempts / 10);
   }
 }

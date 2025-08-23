@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/auth.service';
 import { Router } from '@angular/router';
@@ -11,7 +11,7 @@ import { ToastComponent } from '../../../shared/toast/toast.component';
 @Component({
   selector: 'app-admin-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, ToastComponent, NgIf, NgFor],
+  imports: [CommonModule, FormsModule, ToastComponent],
   templateUrl: './admin-page.html',
   styleUrls: ['./admin-page.scss'],
 })
@@ -380,7 +380,6 @@ export class AdminPage implements OnInit {
   }
 
   selectQuiz(quiz: Quiz): void {
-    console.log('selectQuiz called with:', quiz);
     this.selectedQuiz = quiz;
     this.editingQuiz = null; // Close any edit forms
     this.showNewQuizForm = false; // Close new quiz form
@@ -394,11 +393,9 @@ export class AdminPage implements OnInit {
 
     try {
       this.loadingQuestions = true;
-      console.log('Loading questions for quiz:', this.selectedQuiz.id);
       this.selectedQuizQuestions = await this.quizService.getQuestions(
         this.selectedQuiz.id
       );
-      console.log('Loaded questions:', this.selectedQuizQuestions);
     } catch (error) {
       console.error('Error loading questions:', error);
       this.toastService.error('Failed to load questions');

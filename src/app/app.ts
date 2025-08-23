@@ -7,7 +7,10 @@ import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { AuthService } from './core/auth.service';
+import { PwaService } from './core/pwa.service';
 import { ToastComponent } from './shared/toast/toast.component';
+import { ToastContainerComponent } from './shared/toast-container/toast-container.component';
+import { PwaInstallComponent } from './shared/pwa-install/pwa-install.component';
 
 @Component({
   selector: 'app-root',
@@ -19,20 +22,23 @@ import { ToastComponent } from './shared/toast/toast.component';
     ToastModule,
     ProgressSpinnerModule,
     ToastComponent,
+    ToastContainerComponent,
+    PwaInstallComponent,
   ],
   providers: [MessageService],
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],
 })
 export class App implements OnInit {
-  protected title = 'quizmaster-pro';
+  protected title = 'QuizMaster Pro';
   menuItems: MenuItem[] = [];
   isLoading = false;
 
   constructor(
     public authService: AuthService,
     private router: Router,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private pwaService: PwaService
   ) {}
 
   ngOnInit() {

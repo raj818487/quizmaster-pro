@@ -260,6 +260,25 @@ export class QuizService {
     }
   }
 
+  async getUserAssignedQuizzes(userId: number): Promise<Quiz[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ success: boolean; quizzes: Quiz[] }>(`/api/users/${userId}/assigned-quizzes`)
+      );
+      
+      if (response && response.success && Array.isArray(response.quizzes)) {
+        console.log('Assigned quizzes retrieved successfully:', response.quizzes);
+        return response.quizzes;
+      } else {
+        console.error('Unexpected response format for assigned quizzes:', response);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching user assigned quizzes:', error);
+      return [];
+    }
+  }
+
   async startQuizAttempt(
     userId: number,
     quizId: number
@@ -376,7 +395,6 @@ export class QuizService {
 
   submitQuiz(submission: Submission, callback: (result: any) => void) {
     // Implementation for legacy compatibility
-    console.log('Legacy submitQuiz called', submission);
     callback({ success: true });
   }
 }
