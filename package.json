@@ -8,7 +8,7 @@
     "start:unified": "node simple-unified-server.js",
     "build": "ng build",
     "build:prod": "ng build --configuration production",
-    "build:netlify": "npm install @angular/animations@^20.0.0 --legacy-peer-deps && npm install --legacy-peer-deps && ng build --configuration production --base-href=/",
+    "build:netlify": "npm install @angular/animations@^20.0.0 --legacy-peer-deps --force && npm install --legacy-peer-deps --force && ng build --configuration production --base-href=/ --force",
     "dev": "npm run build && npm run start:unified",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -43,7 +43,7 @@
     "typescript": "^5.8.2"
   },
   "engines": {
-    "node": ">=20.0.0 <21.0.0",
+    "node": ">=20.19.0 <21.0.0",
     "npm": ">=10.0.0"
   }
 }
