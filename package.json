@@ -8,7 +8,7 @@
     "start:unified": "node simple-unified-server.js",
     "build": "ng build",
     "build:prod": "ng build --configuration production",
-    "build:netlify": "npm install @angular/animations@^20.0.0 --legacy-peer-deps && npm install --legacy-peer-deps && ng build",
+    "build:netlify": "npm install @angular/animations@^20.0.0 --legacy-peer-deps && npm install --legacy-peer-deps && npm run build",
     "dev": "npm run build && npm run start:unified",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -41,5 +41,9 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.17.19",
     "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0 <21.0.0",
+    "npm": ">=10.0.0"
   }
 }

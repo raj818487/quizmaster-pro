@@ -7,5 +7,5 @@
   
 # Environment variables for build
 [build.environment]
-  NODE_VERSION = "20.x"
+  NODE_VERSION = "20.11.1"
   NPM_FLAGS = "--legacy-peer-deps"
