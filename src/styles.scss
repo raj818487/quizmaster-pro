@@ -3,7 +3,8 @@
 // components according to the Material 3 design spec.
 // Learn more about theming and how to use it for your application's
 // custom components at https://material.angular.dev/guide/theming
-@use "@angular/material" as mat;
+// We're using prebuilt theme instead of SCSS imports
+// @use "@angular/material" as mat;
 
 // PrimeNG v20+ Theme Imports
 @import "primeicons/primeicons.css";
@@ -25,6 +26,7 @@ $text-secondary: #64748b;
 $border: #e2e8f0;
 $shadow: rgba(0, 0, 0, 0.1);
 
+/* Commenting out Material theming as we're using prebuilt theme 
 html {
   @include mat.theme(
     (
@@ -36,6 +38,11 @@ html {
       density: 0,
     )
   );
+}
+*/
+
+html {
+  font-family: 'Inter', sans-serif;
 }
 
 // Global Styles
