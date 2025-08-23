@@ -1,6 +1,6 @@
 [build]
   command = "npm run build:netlify"
-  publish = "dist/quizmaster-pro/browser"
+  publish = "dist/quizmaster-pro/browser/browser"
 
 [[plugins]]
   package = "@netlify/angular-runtime"
