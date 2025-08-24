@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  apiUrl: 'https://your-production-api-url.com/api', // Change this to your deployed API endpoint
   turso: {
     url: 'libsql://exam-test-raj818487.aws-ap-south-1.turso.io',
     token:
