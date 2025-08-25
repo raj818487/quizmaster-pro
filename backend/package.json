@@ -1,0 +1,24 @@
+{
+  "name": "quizmaster-pro-backend",
+  "version": "1.0.0",
+  "description": "Backend server for QuizMaster Pro application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "migrate": "node migrate-db.js",
+    "setup": "npm run migrate && npm run start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "express": "^4.18.2",
+    "swagger-ui-express": "^4.6.3",
+    "yamljs": "^0.3.0",
+    "cors": "^2.8.5",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

@@ -1,27 +1,18 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 
-// Type declaration for electron API
-declare global {
-  interface Window {
-    electronAPI?: {
-      send: (channel: string, data?: any) => void;
-      receive: (channel: string, func: (...args: any[]) => void) => void;
-    };
-  }
-}
-
+/**
+ * DatabaseService
+ * 
+ * This service used to handle communication with Electron,
+ * but has been refactored to be a simple placeholder since
+ * we now use the separated backend architecture.
+ */
 @Injectable({ providedIn: 'root' })
 export class DatabaseService {
-  send(channel: string, data?: any) {
-    // Only run in browser
-    if (typeof window !== 'undefined' && window.electronAPI) {
-      window.electronAPI.send(channel, data);
-    }
-  }
-  receive(channel: string, func: (...args: any[]) => void) {
-    // Only run in browser
-    if (typeof window !== 'undefined' && window.electronAPI) {
-      window.electronAPI.receive(channel, func);
-    }
+  apiUrl = environment.apiUrl;
+  
+  constructor() {
+    console.log('Database service initialized with API URL:', this.apiUrl);
   }
 }

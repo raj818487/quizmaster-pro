@@ -1,0 +1,601 @@
+openapi: 3.0.0
+info:
+  title: QuizMaster Pro API (backend)
+  version: '1.0'
+  description: API documentation for the QuizMaster Pro application's backend server
+paths:
+  /api/auth/login:
+    post:
+      summary: Login
+      description: Authenticate a user with username and password
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+  /api/auth/register:
+    post:
+      summary: Register user
+      description: Create a new user account
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [user, admin]
+                  default: user
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+  /api/users:
+    get:
+      summary: List users
+      description: Get a list of all users
+      tags:
+        - Users
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create user
+      description: Create a new user (admin function)
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [user, admin]
+                  default: user
+      responses:
+        '201':
+          description: Created
+  /api/users/{id}:
+    put:
+      summary: Update user
+      description: Update user information
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [user, admin]
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Delete user
+      description: Delete a user
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /api/users/{id}/quizzes:
+    get:
+      summary: Get user's quizzes
+      description: Get quizzes created by a specific user
+      tags:
+        - Users
+        - Quizzes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /api/users/{id}/assigned-quizzes:
+    get:
+      summary: Get user's assigned quizzes
+      description: Get quizzes assigned to a specific user
+      tags:
+        - Users
+        - Quizzes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /api/users/{id}/attempts:
+    get:
+      summary: Get user's quiz attempts
+      description: Get all quiz attempts made by a specific user
+      tags:
+        - Users
+        - Quiz Attempts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /api/quizzes:
+    get:
+      summary: List quizzes
+      description: Get a list of all quizzes
+      tags:
+        - Quizzes
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create quiz
+      description: Create a new quiz with optional questions
+      tags:
+        - Quizzes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                created_by:
+                  type: integer
+                is_public:
+                  type: boolean
+                  default: true
+                time_limit:
+                  type: integer
+                  default: 0
+                questions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                      type:
+                        type: string
+                        enum: [multiple_choice, true_false, short_answer]
+                      correct_answer:
+                        type: string
+                      options:
+                        type: array
+                        items:
+                          type: string
+                      points:
+                        type: integer
+                        default: 1
+      responses:
+        '201':
+          description: Created
+  /api/quizzes/public:
+    get:
+      summary: List public quizzes
+      description: Get a list of all public quizzes
+      tags:
+        - Quizzes
+      responses:
+        '200':
+          description: OK
+  /api/quizzes/{id}:
+    get:
+      summary: Get quiz
+      description: Get a specific quiz by ID
+      tags:
+        - Quizzes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Quiz not found
+    put:
+      summary: Update quiz
+      description: Update a quiz's information
+      tags:
+        - Quizzes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                is_public:
+                  type: boolean
+                time_limit:
+                  type: integer
+                user_id:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Quiz not found
+    delete:
+      summary: Delete quiz
+      description: Delete a quiz and all its associated data
+      tags:
+        - Quizzes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Quiz not found
+  /api/quizzes/{id}/questions:
+    get:
+      summary: Get quiz questions
+      description: Get all questions for a specific quiz
+      tags:
+        - Quizzes
+        - Questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Add question
+      description: Add a new question to a quiz
+      tags:
+        - Questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                type:
+                  type: string
+                  enum: [multiple_choice, true_false, short_answer]
+                correct_answer:
+                  type: string
+                options:
+                  type: array
+                  items:
+                    type: string
+                points:
+                  type: integer
+                user_id:
+                  type: integer
+      responses:
+        '201':
+          description: Created
+        '404':
+          description: Quiz not found
+  /api/questions/{id}:
+    put:
+      summary: Update question
+      description: Update a question's information
+      tags:
+        - Questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                type:
+                  type: string
+                  enum: [multiple_choice, true_false, short_answer]
+                correct_answer:
+                  type: string
+                options:
+                  type: array
+                  items:
+                    type: string
+                points:
+                  type: integer
+                user_id:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Question not found
+    delete:
+      summary: Delete question
+      description: Delete a question
+      tags:
+        - Questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Question not found
+  /api/attempts:
+    post:
+      summary: Create quiz attempt
+      description: Start a new quiz attempt
+      tags:
+        - Quiz Attempts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                quiz_id:
+                  type: integer
+      responses:
+        '201':
+          description: Created
+  /api/attempts/{id}/answers:
+    post:
+      summary: Submit answer
+      description: Submit an answer for a question in a quiz attempt
+      tags:
+        - Quiz Attempts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question_id:
+                  type: integer
+                user_answer:
+                  type: string
+      responses:
+        '201':
+          description: Created
+  /api/attempts/{id}/complete:
+    post:
+      summary: Complete attempt
+      description: Mark a quiz attempt as complete and calculate the score
+      tags:
+        - Quiz Attempts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Attempt not found
+  /api/stats:
+    get:
+      summary: Get statistics
+      description: Get system-wide statistics
+      tags:
+        - Statistics
+      responses:
+        '200':
+          description: OK
+  /api/assignments:
+    post:
+      summary: Create quiz assignment
+      description: Assign a quiz to a user
+      tags:
+        - Quiz Assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quiz_id:
+                  type: integer
+                user_id:
+                  type: integer
+                assigned_by:
+                  type: integer
+      responses:
+        '201':
+          description: Created
+  /api/assignments/{id}:
+    delete:
+      summary: Delete assignment
+      description: Delete a quiz assignment
+      tags:
+        - Quiz Assignments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Assignment not found
+  /api/access-requests:
+    get:
+      summary: List access requests
+      description: Get a list of quiz access requests
+      tags:
+        - Access Requests
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create access request
+      description: Request access to a quiz
+      tags:
+        - Access Requests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quiz_id:
+                  type: integer
+                user_id:
+                  type: integer
+      responses:
+        '201':
+          description: Created
+  /api/access-requests/{id}:
+    put:
+      summary: Update access request
+      description: Approve or reject an access request
+      tags:
+        - Access Requests
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected]
+                resolved_by:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Access request not found

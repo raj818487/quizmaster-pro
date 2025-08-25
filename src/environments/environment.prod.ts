@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://quizmaster-pro-lemon.vercel.app/api', // Change this to your deployed API endpoint
+  apiUrl: 'https://quizmaster-pro-backend.vercel.app/api', // URL for your deployed backend
   turso: {
     url: 'libsql://exam-test-raj818487.aws-ap-south-1.turso.io',
     token:

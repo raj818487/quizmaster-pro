@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: '/api', // Change this to your local API endpoint if needed
+  apiUrl: 'http://localhost:4000/api', // Points to the separate backend server
   turso: {
     url: 'libsql://exam-test-raj818487.aws-ap-south-1.turso.io',
     token:

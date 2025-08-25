@@ -1,14 +1,83 @@
-# QuizmasterPro
+# QuizMaster Pro
 
-Electron integration has been removed. This project now runs as a pure Angular app using an in-memory mock DB.
+QuizMaster Pro is a comprehensive quiz management application built with Angular for the frontend and Express/SQLite for the backend. The application allows administrators to create, manage, and assign quizzes, while users can take quizzes and view their results.
 
-Run locally:
+## Project Structure
 
-1. Install deps: `npm install`
-2. Start dev server: `npm run start`
-3. Open http://localhost:4200/#/auth
+This project uses a clean separated architecture with:
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.0.1.
+1. **Frontend**: Angular 20.x application in the root directory
+2. **Backend**: Express.js API server in the `backend/` directory
+
+## Architecture
+
+- **Frontend**: Angular 20.x with Angular Material and PrimeNG
+- **Backend**: Node.js with Express.js 
+- **Database**: SQLite using better-sqlite3
+- **API Documentation**: Swagger UI
+
+## Quick Start
+
+### Run the frontend and backend (separated architecture)
+
+```bash
+# Install dependencies for both
+npm install
+npm run install:backend
+
+# Run both servers together
+npm run start:dev
+```
+
+This will start:
+- The backend API server on http://localhost:4000
+- The Angular development server on http://localhost:4200
+- Swagger API documentation on http://localhost:4000/api-docs
+
+### Run frontend or backend separately
+
+```bash
+# Run only the frontend
+npm start
+
+# Run only the backend
+npm run start:api
+```
+
+### Automatic Migration from Unified Mode
+
+If you're migrating from the unified mode to separated architecture, you can use the provided migration script:
+
+```bash
+# Windows
+.\migrate-to-separated.bat
+
+# Manual steps for any platform
+npm install
+npm run install:backend
+npm run migrate
+npm run cleanup
+```
+
+This will:
+1. Install dependencies for both frontend and backend
+2. Migrate the database from root to backend folder
+3. Clean up unnecessary backend files from the frontend
+
+# Frontend: http://localhost:4200
+# Backend: http://localhost:4000/api-docs
+```
+
+## Features
+
+- User authentication and role-based access control
+- Quiz creation and management
+- Multiple question types (multiple choice, true/false, etc.)
+- Quiz assignments and access management
+- Quiz attempts tracking and scoring
+- Statistics and reporting
+
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.1.7.
 
 ## Development server
 

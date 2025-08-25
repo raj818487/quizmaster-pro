@@ -125,7 +125,7 @@ export class AuthService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.delete(`/api/users/${userId}`)
+        this.http.delete(`${this.apiUrl}/users/${userId}`)
       );
       if (resp?.success)
         return { success: true, message: 'User deleted successfully' };
@@ -148,7 +148,7 @@ export class AuthService {
       const body: any = { username, role };
       if (password) body.password = password;
       const resp: any = await firstValueFrom(
-        this.http.put(`/api/users/${id}`, body)
+        this.http.put(`${this.apiUrl}/users/${id}`, body)
       );
       if (resp?.success)
         return { success: true, message: 'User updated successfully' };

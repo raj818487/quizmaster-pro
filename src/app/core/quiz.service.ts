@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Quiz, Question, Submission } from './models';
+import { environment } from '../../environments/environment';
 
 export interface QuizAttempt {
   id?: number;
@@ -32,7 +33,7 @@ export interface QuizResult {
   providedIn: 'root',
 })
 export class QuizService {
-  private apiUrl = '/api';
+  private apiUrl = environment.apiUrl || '/api';
 
   constructor(private http: HttpClient) {}
 
@@ -65,7 +66,7 @@ export class QuizService {
     try {
       const qs =
         (await firstValueFrom(
-          this.http.get<Question[]>(`/api/quizzes/${quizId}/questions`)
+          this.http.get<Question[]>(`${this.apiUrl}/quizzes/${quizId}/questions`)
         )) || [];
       return qs;
     } catch (error) {
@@ -114,7 +115,7 @@ export class QuizService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.put(`/api/quizzes/${quizId}`, {
+  this.http.put(`${this.apiUrl}/quizzes/${quizId}`, {
           ...quiz,
           user_id: userId,
         })
@@ -140,7 +141,7 @@ export class QuizService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.delete(`/api/quizzes/${quizId}?user_id=${userId}`)
+  this.http.delete(`${this.apiUrl}/quizzes/${quizId}?user_id=${userId}`)
       );
       if (resp?.success)
         return { success: true, message: 'Quiz deleted successfully' };
@@ -161,7 +162,7 @@ export class QuizService {
   ): Promise<{ success: boolean; question?: Question; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.post(`/api/quizzes/${quizId}/questions`, {
+  this.http.post(`${this.apiUrl}/quizzes/${quizId}/questions`, {
           ...question,
           user_id: userId,
         })
@@ -193,7 +194,7 @@ export class QuizService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.put(`/api/questions/${questionId}`, {
+  this.http.put(`${this.apiUrl}/questions/${questionId}`, {
           ...question,
           user_id: userId,
         })
@@ -219,7 +220,7 @@ export class QuizService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.delete(`/api/questions/${questionId}?user_id=${userId}`)
+  this.http.delete(`${this.apiUrl}/questions/${questionId}?user_id=${userId}`)
       );
       if (resp?.success)
         return { success: true, message: 'Question deleted successfully' };
@@ -239,7 +240,7 @@ export class QuizService {
   async getUserQuizzes(userId: number): Promise<Quiz[]> {
     try {
       const quizzes = await firstValueFrom(
-        this.http.get<Quiz[]>(`/api/users/${userId}/quizzes`)
+  this.http.get<Quiz[]>(`${this.apiUrl}/users/${userId}/quizzes`)
       );
       return quizzes || [];
     } catch (error) {
@@ -251,7 +252,7 @@ export class QuizService {
   async getPublicQuizzes(): Promise<Quiz[]> {
     try {
       const quizzes = await firstValueFrom(
-        this.http.get<Quiz[]>(`/api/quizzes/public`)
+  this.http.get<Quiz[]>(`${this.apiUrl}/quizzes/public`)
       );
       return quizzes || [];
     } catch (error) {
@@ -263,7 +264,7 @@ export class QuizService {
   async getUserAssignedQuizzes(userId: number): Promise<Quiz[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<{ success: boolean; quizzes: Quiz[] }>(`/api/users/${userId}/assigned-quizzes`)
+  this.http.get<{ success: boolean; quizzes: Quiz[] }>(`${this.apiUrl}/users/${userId}/assigned-quizzes`)
       );
       
       if (response && response.success && Array.isArray(response.quizzes)) {
@@ -285,7 +286,7 @@ export class QuizService {
   ): Promise<{ success: boolean; attemptId?: number; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.post(`${this.apiUrl}/attempts`, {
+  this.http.post(`${this.apiUrl}/attempts`, {
           user_id: userId,
           quiz_id: quizId,
         })
@@ -317,7 +318,7 @@ export class QuizService {
   ): Promise<boolean> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.post(`/api/attempts/${attemptId}/answers`, {
+  this.http.post(`${this.apiUrl}/attempts/${attemptId}/answers`, {
           question_id: questionId,
           user_answer: userAnswer,
         })
@@ -334,7 +335,7 @@ export class QuizService {
   ): Promise<{ success: boolean; result?: QuizResult; message: string }> {
     try {
       const resp: any = await firstValueFrom(
-        this.http.post(`/api/attempts/${attemptId}/complete`, {})
+  this.http.post(`${this.apiUrl}/attempts/${attemptId}/complete`, {})
       );
       if (resp?.success)
         return {
@@ -359,7 +360,7 @@ export class QuizService {
     try {
       const attempts =
         (await firstValueFrom(
-          this.http.get<QuizAttempt[]>(`/api/users/${userId}/attempts`)
+    this.http.get<QuizAttempt[]>(`${this.apiUrl}/users/${userId}/attempts`)
         )) || [];
       return attempts;
     } catch (error) {
