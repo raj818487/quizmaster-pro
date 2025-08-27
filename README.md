@@ -12,7 +12,7 @@ This project uses a clean separated architecture with:
 ## Architecture
 
 - **Frontend**: Angular 20.x with Angular Material and PrimeNG
-- **Backend**: Node.js with Express.js 
+- **Backend**: Node.js with Express.js
 - **Database**: SQLite using better-sqlite3
 - **API Documentation**: Swagger UI
 
@@ -30,6 +30,7 @@ npm run start:dev
 ```
 
 This will start:
+
 - The backend API server on http://localhost:4000
 - The Angular development server on http://localhost:4200
 - Swagger API documentation on http://localhost:4000/api-docs
@@ -60,13 +61,16 @@ npm run cleanup
 ```
 
 This will:
+
 1. Install dependencies for both frontend and backend
 2. Migrate the database from root to backend folder
 3. Clean up unnecessary backend files from the frontend
 
 # Frontend: http://localhost:4200
+
 # Backend: http://localhost:4000/api-docs
-```
+
+````
 
 ## Features
 
@@ -85,7 +89,7 @@ To start a local development server, run:
 
 ```bash
 ng serve
-```
+````
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 

@@ -67,20 +67,30 @@ export class ManageUsersComponent implements OnInit {
   async loadUsers() {
     this.loading = true;
     try {
+      // Clear the users array first to ensure UI shows the loading state
+      this.users = [];
+      this.filteredUsers = [];
+
       const users = await this.authService.getAllUsers();
-      this.users = users.map((user) => ({
-        ...user,
-        _editing: false,
-        email: `${user.username}@example.com`,
-        status: 'active' as const,
-        canCreateQuiz: user.role === 'admin',
-        lastActivity: new Date(),
-        isOnline: Math.random() > 0.5,
-      }));
-      this.applyFilters();
+
+      // Process users after a small delay to ensure changes are reflected
+      setTimeout(() => {
+        this.users = users.map((user) => ({
+          ...user,
+          _editing: false,
+          email: `${user.username}@example.com`,
+          status: user.status || ('active' as const),
+          canCreateQuiz: user.role === 'admin',
+          lastActivity: user.last_activity
+            ? new Date(user.last_activity)
+            : new Date(),
+          isOnline: user.isOnline || false,
+        }));
+        this.applyFilters();
+        this.loading = false;
+      }, 100);
     } catch (error) {
       console.error('Failed to load users:', error);
-    } finally {
       this.loading = false;
     }
   }
@@ -287,16 +297,74 @@ export class ManageUsersComponent implements OnInit {
     return this.authService.isAdmin();
   }
 
-  viewUserActivity(user: ExtendedUser) {
-    console.log('View activity for user:', user.username);
+  async viewUserActivity(user: ExtendedUser) {
+    try {
+      const response = await fetch(
+        `${this.authService['apiUrl']}/users/${user.id}/activity`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log('User activity data:', data);
+
+        // Here you would typically display this information in a modal or details panel
+        // For now we'll just create a simple alert with the info
+        const activityInfo = `
+User: ${data.user.username}
+Status: ${data.user.status}
+Last Active: ${new Date(data.user.last_activity).toLocaleString()}
+Online: ${data.user.isOnline ? 'Yes' : 'No'}
+Recent Quiz Attempts: ${data.activity.attempts.length}
+Access Requests: ${data.activity.accessRequests.length}
+        `;
+        alert(activityInfo);
+      } else {
+        console.error('Failed to fetch user activity');
+      }
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+    }
   }
 
-  suspendUser(user: ExtendedUser) {
-    console.log('Suspend user:', user.username);
+  async suspendUser(user: ExtendedUser) {
+    try {
+      const result = await this.authService.updateUser(
+        user.id!,
+        user.username,
+        undefined,
+        user.role,
+        'suspended'
+      );
+
+      if (result.success) {
+        user.status = 'suspended';
+        this.loadUsers(); // Reload to get the latest state
+      } else {
+        console.error('Failed to suspend user');
+      }
+    } catch (error) {
+      console.error('Error suspending user:', error);
+    }
   }
 
-  activateUser(user: ExtendedUser) {
-    console.log('Activate user:', user.username);
+  async activateUser(user: ExtendedUser) {
+    try {
+      const result = await this.authService.updateUser(
+        user.id!,
+        user.username,
+        undefined,
+        user.role,
+        'active'
+      );
+
+      if (result.success) {
+        user.status = 'active';
+        this.loadUsers(); // Reload to get the latest state
+      } else {
+        console.error('Failed to activate user');
+      }
+    } catch (error) {
+      console.error('Error activating user:', error);
+    }
   }
 
   // Selection methods
@@ -339,7 +407,8 @@ export class ManageUsersComponent implements OnInit {
             userId,
             user.username,
             undefined,
-            user.role
+            user.role,
+            status
           );
         }
       }

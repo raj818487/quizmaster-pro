@@ -6,6 +6,9 @@ export interface User {
   password?: string;
   role: 'user' | 'admin';
   created_at?: Date;
+  status?: 'active' | 'inactive' | 'suspended';
+  last_activity?: string;
+  isOnline?: boolean;
 }
 
 export interface Quiz {

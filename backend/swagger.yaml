@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: QuizMaster Pro API (backend)
-  version: '1.0'
+  version: "1.0"
   description: API documentation for the QuizMaster Pro application's backend server
 paths:
   /api/auth/login:
@@ -22,9 +22,9 @@ paths:
                 password:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
+        "401":
           description: Unauthorized
   /api/auth/register:
     post:
@@ -48,9 +48,9 @@ paths:
                   enum: [user, admin]
                   default: user
       responses:
-        '201':
+        "201":
           description: Created
-        '400':
+        "400":
           description: Bad Request
   /api/users:
     get:
@@ -59,7 +59,7 @@ paths:
       tags:
         - Users
       responses:
-        '200':
+        "200":
           description: OK
     post:
       summary: Create user
@@ -82,7 +82,7 @@ paths:
                   enum: [user, admin]
                   default: user
       responses:
-        '201':
+        "201":
           description: Created
   /api/users/{id}:
     put:
@@ -111,7 +111,7 @@ paths:
                   type: string
                   enum: [user, admin]
       responses:
-        '200':
+        "200":
           description: OK
     delete:
       summary: Delete user
@@ -125,7 +125,7 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
   /api/users/{id}/quizzes:
     get:
@@ -141,7 +141,7 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
   /api/users/{id}/assigned-quizzes:
     get:
@@ -157,7 +157,7 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
   /api/users/{id}/attempts:
     get:
@@ -173,7 +173,7 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
   /api/quizzes:
     get:
@@ -182,7 +182,7 @@ paths:
       tags:
         - Quizzes
       responses:
-        '200':
+        "200":
           description: OK
     post:
       summary: Create quiz
@@ -228,7 +228,7 @@ paths:
                         type: integer
                         default: 1
       responses:
-        '201':
+        "201":
           description: Created
   /api/quizzes/public:
     get:
@@ -237,7 +237,7 @@ paths:
       tags:
         - Quizzes
       responses:
-        '200':
+        "200":
           description: OK
   /api/quizzes/{id}:
     get:
@@ -252,9 +252,9 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Quiz not found
     put:
       summary: Update quiz
@@ -285,9 +285,9 @@ paths:
                 user_id:
                   type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Quiz not found
     delete:
       summary: Delete quiz
@@ -306,9 +306,9 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Quiz not found
   /api/quizzes/{id}/questions:
     get:
@@ -324,7 +324,7 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
     post:
       summary: Add question
@@ -360,9 +360,9 @@ paths:
                 user_id:
                   type: integer
       responses:
-        '201':
+        "201":
           description: Created
-        '404':
+        "404":
           description: Quiz not found
   /api/questions/{id}:
     put:
@@ -399,9 +399,9 @@ paths:
                 user_id:
                   type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Question not found
     delete:
       summary: Delete question
@@ -420,9 +420,9 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Question not found
   /api/attempts:
     post:
@@ -442,7 +442,7 @@ paths:
                 quiz_id:
                   type: integer
       responses:
-        '201':
+        "201":
           description: Created
   /api/attempts/{id}/answers:
     post:
@@ -468,7 +468,7 @@ paths:
                 user_answer:
                   type: string
       responses:
-        '201':
+        "201":
           description: Created
   /api/attempts/{id}/complete:
     post:
@@ -483,9 +483,9 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Attempt not found
   /api/stats:
     get:
@@ -494,7 +494,7 @@ paths:
       tags:
         - Statistics
       responses:
-        '200':
+        "200":
           description: OK
   /api/assignments:
     post:
@@ -516,7 +516,7 @@ paths:
                 assigned_by:
                   type: integer
       responses:
-        '201':
+        "201":
           description: Created
   /api/assignments/{id}:
     delete:
@@ -531,9 +531,9 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Assignment not found
   /api/access-requests:
     get:
@@ -549,7 +549,7 @@ paths:
             type: string
             enum: [pending, approved, rejected]
       responses:
-        '200':
+        "200":
           description: OK
     post:
       summary: Create access request
@@ -568,7 +568,7 @@ paths:
                 user_id:
                   type: integer
       responses:
-        '201':
+        "201":
           description: Created
   /api/access-requests/{id}:
     put:
@@ -595,7 +595,7 @@ paths:
                 resolved_by:
                   type: integer
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
+        "404":
           description: Access request not found

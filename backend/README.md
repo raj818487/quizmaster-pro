@@ -46,10 +46,12 @@ npm run dev # for development with auto-reload
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/login` - Login with username/password
 - `POST /api/auth/register` - Register a new user
 
 ### Users
+
 - `GET /api/users` - List all users
 - `PUT /api/users/:id` - Update a user
 - `DELETE /api/users/:id` - Delete a user
@@ -58,6 +60,7 @@ npm run dev # for development with auto-reload
 - `GET /api/users/:id/assigned-quizzes` - Get quizzes assigned to a user
 
 ### Quizzes
+
 - `GET /api/quizzes` - List all quizzes
 - `GET /api/quizzes/public` - List public quizzes
 - `GET /api/quizzes/:id` - Get quiz details
@@ -67,25 +70,30 @@ npm run dev # for development with auto-reload
 - `GET /api/quizzes/:id/questions` - Get questions for a quiz
 
 ### Questions
+
 - `POST /api/quizzes/:id/questions` - Add a question to a quiz
 - `PUT /api/questions/:id` - Update a question
 - `DELETE /api/questions/:id` - Delete a question
 
 ### Quiz Attempts
+
 - `POST /api/attempts` - Start a new quiz attempt
 - `POST /api/attempts/:id/answers` - Submit an answer
 - `POST /api/attempts/:id/complete` - Complete a quiz attempt
 
 ### Quiz Assignments
+
 - `POST /api/assignments` - Assign a quiz to a user
 - `DELETE /api/assignments/:id` - Remove a quiz assignment
 
 ### Access Requests
+
 - `GET /api/access-requests` - List access requests
 - `POST /api/access-requests` - Request access to a quiz
 - `PUT /api/access-requests/:id` - Approve/reject access request
 
 ### Statistics
+
 - `GET /api/stats` - Get system-wide statistics
 
 ## Running with Frontend

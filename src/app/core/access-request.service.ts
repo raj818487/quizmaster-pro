@@ -62,20 +62,26 @@ export class AccessRequestService {
     }
   }
 
-  async createAccessRequest(request: AccessRequestCreate): Promise<{ success: boolean; message: string }> {
+  async createAccessRequest(
+    request: AccessRequestCreate
+  ): Promise<{ success: boolean; message: string }> {
     try {
       const response: any = await firstValueFrom(
         this.http.post(`${this.apiUrl}/access-requests`, request)
       );
       return {
         success: response.success || false,
-        message: response.message || (response.success ? 'Request created successfully' : 'Failed to create request')
+        message:
+          response.message ||
+          (response.success
+            ? 'Request created successfully'
+            : 'Failed to create request'),
       };
     } catch (error) {
       console.error('Error creating access request:', error);
       return {
         success: false,
-        message: 'Failed to create access request'
+        message: 'Failed to create access request',
       };
     }
   }

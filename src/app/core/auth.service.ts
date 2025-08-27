@@ -142,16 +142,25 @@ export class AuthService {
     id: number,
     username: string,
     password: string | undefined,
-    role: 'user' | 'admin'
-  ): Promise<{ success: boolean; message: string }> {
+    role: 'user' | 'admin',
+    status?: 'active' | 'suspended' | 'inactive'
+  ): Promise<{ success: boolean; message: string; user?: User }> {
     try {
       const body: any = { username, role };
       if (password) body.password = password;
+      if (status) body.status = status;
+
       const resp: any = await firstValueFrom(
         this.http.put(`${this.apiUrl}/users/${id}`, body)
       );
-      if (resp?.success)
-        return { success: true, message: 'User updated successfully' };
+
+      if (resp?.success) {
+        return {
+          success: true,
+          message: 'User updated successfully',
+          user: resp.user,
+        };
+      }
       return {
         success: false,
         message: resp?.message || 'Failed to update user',

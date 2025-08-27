@@ -73,7 +73,7 @@ export class QuizAssignmentService {
         this.http.post(`${this.apiUrl}/quiz-assignments`, assignment)
       );
       console.log('Assignment update response:', response);
-      return response.success ? (response.assignment || {}) : null;
+      return response.success ? response.assignment || {} : null;
     } catch (error) {
       console.error('Error updating assignment:', error);
       return null;
@@ -88,7 +88,7 @@ export class QuizAssignmentService {
         this.http.put(`${this.apiUrl}/quiz-assignments/bulk`, bulkRequest)
       );
       console.log('Bulk assignment update response:', response);
-      return response.success ? (response.assignments || []) : [];
+      return response.success ? response.assignments || [] : [];
     } catch (error) {
       console.error('Error bulk updating assignments:', error);
       return [];

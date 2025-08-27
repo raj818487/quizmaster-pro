@@ -4,9 +4,9 @@ import { User, Quiz, Question } from './models';
 
 /**
  * This service is deprecated and kept only for backwards compatibility.
- * All database operations should now use the corresponding API services that 
+ * All database operations should now use the corresponding API services that
  * connect to the backend server.
- * 
+ *
  * @deprecated Use proper API services instead
  */
 @Injectable({
@@ -21,13 +21,16 @@ export class SqliteService {
     this.isInitialized = true;
     console.warn(
       'SqliteService is deprecated. Use the appropriate API service instead ' +
-      'that connects to the backend at ' + this.apiUrl
+        'that connects to the backend at ' +
+        this.apiUrl
     );
   }
 
   // Stub methods to prevent breaking changes
   async executeQuery(query: string, params: any[] = []): Promise<any> {
-    console.warn('SQLite operations are no longer supported. Use API services instead.');
+    console.warn(
+      'SQLite operations are no longer supported. Use API services instead.'
+    );
     return [];
   }
 
@@ -36,12 +39,21 @@ export class SqliteService {
     return [];
   }
 
-  async createUser(username: string, password: string, role: string): Promise<any> {
+  async createUser(
+    username: string,
+    password: string,
+    role: string
+  ): Promise<any> {
     console.warn('Use AuthService instead of deprecated SqliteService');
     return { success: false, message: 'Operation not supported' };
   }
 
-  async updateUser(id: number, username: string, password: string, role: string): Promise<any> {
+  async updateUser(
+    id: number,
+    username: string,
+    password: string,
+    role: string
+  ): Promise<any> {
     console.warn('Use AuthService instead of deprecated SqliteService');
     return { success: false, message: 'Operation not supported' };
   }
@@ -55,4 +67,3 @@ export class SqliteService {
     return this.isInitialized;
   }
 }
-
