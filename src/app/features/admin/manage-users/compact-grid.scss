@@ -1,0 +1,205 @@
+.user-access-management {
+  .system-status-bar {
+    background: linear-gradient(135deg, #3f51b5 0%, #2196f3 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: pulse 1.5s infinite ease-in-out;
+
+    .loading-indicator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .loading-icon {
+        font-size: 18px;
+      }
+
+      .loading-message {
+        font-weight: 500;
+      }
+    }
+  }
+
+  .compact-grid {
+    .table-header {
+      background-color: #f5f7fa;
+      font-weight: 600;
+      font-size: 0.9rem;
+
+      .actions-header {
+        text-align: center;
+      }
+    }
+
+    .compact-row {
+      height: auto;
+      min-height: 50px;
+      font-size: 0.9rem;
+
+      .table-cell {
+        padding: 6px 12px;
+
+        &.user-info {
+          flex: 2;
+
+          .user-profile {
+            display: flex;
+            align-items: center;
+          }
+
+          .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+            background: #3f51b5;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+          }
+
+          .user-details {
+            flex: 1;
+
+            .user-name {
+              font-size: 0.9rem;
+              font-weight: 600;
+              color: #333;
+            }
+
+            .user-meta {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+              font-size: 0.75rem;
+              color: #666;
+            }
+          }
+        }
+
+        &.role-status {
+          flex: 1;
+
+          .role-badge,
+          .status-badge {
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 2px 0;
+          }
+
+          .role-badge {
+            background-color: #e3f2fd;
+            color: #1976d2;
+
+            &.role-admin {
+              background-color: #e8eaf6;
+              color: #3f51b5;
+            }
+          }
+
+          .status-badge {
+            &.status-active {
+              background-color: #e8f5e9;
+              color: #2e7d32;
+            }
+
+            &.status-inactive {
+              background-color: #f5f5f5;
+              color: #757575;
+            }
+
+            &.status-suspended {
+              background-color: #ffebee;
+              color: #c62828;
+            }
+          }
+        }
+
+        &.actions-cell {
+          flex: 0 0 150px;
+          display: flex;
+          justify-content: flex-end;
+
+          .action-buttons {
+            display: flex;
+            gap: 4px;
+
+            .btn-icon {
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              border: none;
+              cursor: pointer;
+              background-color: #f5f5f5;
+              transition: all 0.2s;
+              font-size: 0.9rem;
+              padding: 0;
+
+              &:hover {
+                transform: scale(1.1);
+              }
+
+              &:active {
+                transform: scale(0.95);
+              }
+
+              &.activity-btn:hover {
+                background-color: #e3f2fd;
+                color: #1976d2;
+              }
+
+              &.warning {
+                &:hover {
+                  background-color: #fff8e1;
+                  color: #f57c00;
+                }
+              }
+
+              &.success {
+                &:hover {
+                  background-color: #e8f5e9;
+                  color: #2e7d32;
+                }
+              }
+
+              &.danger {
+                &:hover {
+                  background-color: #ffebee;
+                  color: #c62828;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      &:hover {
+        background-color: rgba(63, 81, 181, 0.05);
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.8;
+  }
+}

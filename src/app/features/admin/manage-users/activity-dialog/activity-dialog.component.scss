@@ -1,0 +1,219 @@
+.activity-dialog {
+  width: 100%;
+  max-width: 600px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+  .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eaeaea;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #333;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: #777;
+
+      &:hover {
+        color: #333;
+      }
+    }
+  }
+
+  .dialog-content {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .user-summary {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .user-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #3f51b5;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 500;
+      margin-right: 16px;
+    }
+
+    .user-details {
+      h3 {
+        margin: 0 0 4px 0;
+        font-size: 1.1rem;
+      }
+
+      .user-status {
+        font-size: 0.9rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        display: inline-block;
+
+        &.status-active {
+          background-color: #e6f7e6;
+          color: #2e7d32;
+        }
+
+        &.status-suspended {
+          background-color: #fff0e8;
+          color: #e65100;
+        }
+
+        &.status-inactive {
+          background-color: #f5f5f5;
+          color: #757575;
+        }
+      }
+    }
+  }
+
+  .activity-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .stat-card {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+
+      .stat-title {
+        display: block;
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #333;
+      }
+    }
+  }
+
+  .activity-timeline {
+    h4 {
+      margin: 0 0 16px 0;
+      font-size: 1rem;
+      color: #333;
+    }
+
+    .timeline {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      position: relative;
+
+      &:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 16px;
+        width: 2px;
+        background: #e0e0e0;
+      }
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 20px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .timeline-marker {
+      position: absolute;
+      left: 12px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3f51b5;
+      top: 6px;
+    }
+
+    .timeline-content {
+      background: #f5f5f5;
+      border-radius: 6px;
+      padding: 12px;
+
+      .activity-action {
+        margin: 0 0 4px 0;
+        font-weight: 500;
+        color: #333;
+      }
+
+      .activity-time {
+        margin: 0 0 8px 0;
+        font-size: 0.8rem;
+        color: #666;
+      }
+
+      .activity-details {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #444;
+        background: #ffffff;
+        padding: 8px;
+        border-radius: 4px;
+      }
+    }
+
+    .empty-activity {
+      text-align: center;
+      padding: 20px;
+      color: #777;
+      background: #f5f5f5;
+      border-radius: 6px;
+    }
+  }
+
+  .dialog-actions {
+    padding: 16px 20px;
+    border-top: 1px solid #eaeaea;
+    text-align: right;
+
+    button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+
+      &.btn-primary {
+        background: #3f51b5;
+        color: white;
+        border: none;
+
+        &:hover {
+          background: #303f9f;
+        }
+      }
+    }
+  }
+}

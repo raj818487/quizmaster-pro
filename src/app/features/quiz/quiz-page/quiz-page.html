@@ -58,13 +58,13 @@
 
     <div class="quiz-body">
       <div class="quiz-question">
-        <label>{{ questions[currentIndex]?.text }}</label>
+        <label>{{ questions[currentIndex].text }}</label>
         <input
-          *ngIf="questions[currentIndex]?.id !== undefined"
+          *ngIf="questions[currentIndex].id !== undefined"
           [(ngModel)]="answers[questions[currentIndex].id!]"
           placeholder="Enter your answer..."
           class="quiz-input"
-          [name]="'answer-' + questions[currentIndex]?.id"
+          [name]="'answer-' + questions[currentIndex].id"
         />
       </div>
 

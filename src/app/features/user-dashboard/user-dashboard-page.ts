@@ -239,4 +239,41 @@ export class UserDashboardPage implements OnInit {
     console.log('Manually refreshing quiz list');
     await this.loadQuizzes();
   }
+
+  // Helper methods for the new dashboard design
+  getAssignedCount(): number {
+    return this.assignedQuizzes.length;
+  }
+
+  getPublicCount(): number {
+    return this.publicQuizzes.length;
+  }
+
+  getPrivateCount(): number {
+    return this.privateQuizzes.length;
+  }
+
+  getAllCount(): number {
+    return this.allQuizzes.length;
+  }
+
+  getCategoryIcon(): string {
+    switch (this.activeCategory) {
+      case 'assigned': return '📋';
+      case 'public': return '🌐';
+      case 'private': return '🔒';
+      case 'all': return '📚';
+      default: return '📚';
+    }
+  }
+
+  getCategoryTitle(): string {
+    switch (this.activeCategory) {
+      case 'assigned': return 'My Assigned Quizzes';
+      case 'public': return 'Public Quizzes';
+      case 'private': return 'Private Quizzes';
+      case 'all': return 'All Quizzes';
+      default: return 'All Quizzes';
+    }
+  }
 }

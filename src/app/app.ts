@@ -102,18 +102,23 @@ export class App implements OnInit {
         ],
       },
       {
-        label: 'Admin',
-        icon: 'pi pi-cog',
+        label: 'Manage User',
+        icon: 'pi pi-users',
+        routerLink: '/admin/manage-users',
+      },
+      {
+        label: 'Quiz Management',
+        icon: 'pi pi-book',
         items: [
           {
-            label: 'Quiz / User Management',
-            icon: 'pi pi-home',
-            routerLink: '/admin',
+            label: 'Quiz Add-Remove',
+            icon: 'pi pi-book',
+            routerLink: '/admin/quiz-management',
           },
           {
-            label: 'Manage User',
-            icon: 'pi pi-users',
-            routerLink: '/admin/manage-users',
+            label: 'Manage Quiz Access',
+            icon: 'pi pi-book',
+            routerLink: '/admin/quiz-access',
           },
         ],
       },

@@ -1,0 +1,37 @@
+<div class="confirmation-dialog">
+  <div class="dialog-header" [ngClass]="data.type || 'info'">
+    <h2>{{ data.title }}</h2>
+    <button
+      type="button"
+      class="close-button"
+      (click)="onCancel()"
+      aria-label="Close"
+    >
+      ×
+    </button>
+  </div>
+
+  <div class="dialog-content">
+    <p [innerHTML]="data.message"></p>
+  </div>
+
+  <div class="dialog-actions">
+    <button type="button" class="btn btn-secondary" (click)="onCancel()">
+      {{ data.cancelText || "Cancel" }}
+    </button>
+    <button
+      type="button"
+      [ngClass]="
+        'btn btn-' +
+        (data.type === 'danger'
+          ? 'danger'
+          : data.type === 'warning'
+          ? 'warning'
+          : 'primary')
+      "
+      (click)="onConfirm()"
+    >
+      {{ data.confirmText || "Confirm" }}
+    </button>
+  </div>
+</div>

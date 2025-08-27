@@ -50,6 +50,12 @@ export class AuthPage implements OnInit {
   }
 
   async register() {
+    // Validate password length
+    if (this.password.length < 6) {
+      this.message = 'Password must be at least 6 characters long.';
+      return;
+    }
+
     const res = await this.auth.register(
       this.username,
       this.password,

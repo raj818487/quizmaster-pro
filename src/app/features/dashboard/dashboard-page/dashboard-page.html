@@ -17,7 +17,7 @@
         <h3>{{ stats.totalQuizzes }}</h3>
         <p>Total Quizzes</p>
         <span class="stat-trend positive"
-          >+{{ getQuizGrowth() }} this week</span
+          >{{ getQuizGrowth() }}% active</span
         >
       </div>
     </div>
@@ -28,7 +28,7 @@
         <h3>{{ stats.activeUsers }}</h3>
         <p>Active Users</p>
         <span class="stat-trend positive"
-          >+{{ getUserGrowth() }} new users</span
+          >{{ stats.totalUsers }} total</span
         >
       </div>
     </div>
@@ -39,7 +39,7 @@
         <h3>{{ stats.totalAttempts }}</h3>
         <p>Quiz Attempts</p>
         <span class="stat-trend positive"
-          >{{ getAttemptGrowth() }}% growth</span
+          >{{ stats.completedAttempts }} completed</span
         >
       </div>
     </div>
@@ -49,10 +49,58 @@
       <div class="stat-content">
         <h3>{{ stats.successRate }}%</h3>
         <p>Success Rate</p>
-        <span class="stat-trend positive">Above average</span>
+        <span class="stat-trend neutral">{{ stats.averageScore }}% avg score</span>
       </div>
     </div>
   </div>
+
+  <!-- Admin-specific metrics -->
+  @if (isAdminView) {
+  <div class="admin-metrics">
+    <h3 class="admin-section-title">Admin Dashboard</h3>
+    <div class="dashboard-stats admin-stats-row">
+      <div class="stat-card admin-stat">
+        <div class="stat-icon">👤</div>
+        <div class="stat-content">
+          <h3>{{ adminMetrics.totalUsers }}</h3>
+          <p>Total Users</p>
+        </div>
+      </div>
+
+      <div class="stat-card admin-stat">
+        <div class="stat-icon">👑</div>
+        <div class="stat-content">
+          <h3>{{ adminMetrics.adminUsers }}</h3>
+          <p>Admin Users</p>
+        </div>
+      </div>
+
+      <div class="stat-card admin-stat">
+        <div class="stat-icon">🔔</div>
+        <div class="stat-content">
+          <h3>{{ adminMetrics.pendingAccessRequests }}</h3>
+          <p>Access Requests</p>
+        </div>
+      </div>
+
+      <div class="stat-card admin-stat">
+        <div class="stat-icon">💾</div>
+        <div class="stat-content">
+          <h3>{{ adminMetrics.storageUsed }}%</h3>
+          <p>Storage Used</p>
+        </div>
+      </div>
+
+      <div class="stat-card admin-stat">
+        <div class="stat-icon">❤️</div>
+        <div class="stat-content">
+          <h3>{{ adminMetrics.systemHealthScore }}%</h3>
+          <p>System Health</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
 
   <!-- Main Dashboard Content -->
   <div class="dashboard-content">

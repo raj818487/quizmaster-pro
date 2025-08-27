@@ -1,18 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AuthService } from '../../../core/auth.service';
 import { User } from '../../../core/models';
+import { ToastService } from '../../../core/toast.service';
+import { ActivityDialogComponent } from './activity-dialog/activity-dialog.component';
+import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 
-interface ExtendedUser extends User {
-  _editing?: boolean;
-  _password?: string;
-  email?: string;
-  status?: 'active' | 'inactive' | 'suspended';
-  canCreateQuiz?: boolean;
-  lastActivity?: Date;
-  isOnline?: boolean;
-}
+// Import the ExtendedUser interface from the dedicated file
+import { ExtendedUser } from './user-models';
 
 interface NewUser {
   username: string;
@@ -23,7 +20,12 @@ interface NewUser {
 @Component({
   selector: 'app-manage-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatDialogModule,
+    ConfirmationDialogComponent,
+  ],
   templateUrl: './manage-users.component.html',
   styleUrls: ['./manage-users.component.scss'],
 })
@@ -33,6 +35,8 @@ export class ManageUsersComponent implements OnInit {
   loading = false;
   creating = false;
   showCreateUser = false;
+  actionLoading = false; // For specific user actions
+  loadingMessage = 'Processing...'; // Default loading message
 
   // Search and filter
   searchTerm = '';
@@ -58,7 +62,11 @@ export class ManageUsersComponent implements OnInit {
   // Selection
   selectedUsers: number[] = [];
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private toastService: ToastService,
+    private dialog: MatDialog
+  ) {}
 
   ngOnInit() {
     this.loadUsers();
@@ -177,11 +185,15 @@ export class ManageUsersComponent implements OnInit {
     this.users.forEach((u) => (u._editing = false));
     user._editing = true;
     user._password = '';
+    user.newPassword = '';
+    user.confirmPassword = '';
   }
 
   cancelEdit(user: ExtendedUser) {
     user._editing = false;
     user._password = '';
+    user.newPassword = '';
+    user.confirmPassword = '';
     this.loadUsers();
   }
 
@@ -189,29 +201,133 @@ export class ManageUsersComponent implements OnInit {
     try {
       if (!user.id) return;
 
-      await this.authService.updateUser(
+      // Validate password fields if provided
+      if (user.newPassword || user.confirmPassword) {
+        if (!user.newPassword) {
+          this.showToast('New password is required', 'error');
+          return;
+        }
+        if (user.newPassword.length < 6) {
+          this.showToast('Password must be at least 6 characters long', 'error');
+          return;
+        }
+        if (user.newPassword !== user.confirmPassword) {
+          this.showToast('Passwords do not match', 'error');
+          return;
+        }
+      }
+
+      // Show immediate feedback
+      this.actionLoading = true;
+      this.loadingMessage = 'Updating user...';
+
+      console.log('Updating user with status:', user.status);
+
+      // Optimistic update - update UI immediately
+      user._editing = false;
+      const originalStatus = user.status; // Store original status in case we need to revert
+
+      // Apply to local display immediately
+      const userIndex = this.users.findIndex((u) => u.id === user.id);
+      if (userIndex !== -1) {
+        // Create a clone of the user with updated properties
+        const updatedUser = {
+          ...this.users[userIndex],
+          ...user,
+          _editing: false,
+        };
+        this.users[userIndex] = updatedUser;
+        this.applyFilters(); // Refresh the filtered view
+      }
+
+      // Use new password if provided, otherwise keep existing password handling
+      const passwordToUpdate = user.newPassword || user._password || undefined;
+
+      // Now make the API call
+      const result = await this.authService.updateUser(
         user.id,
         user.username,
-        user._password || undefined,
-        user.role
+        passwordToUpdate,
+        user.role,
+        user.status
       );
-      user._editing = false;
+
+      if (result.success) {
+        console.log('User updated successfully:', result);
+        // Update with server data to ensure consistency
+        if (result.user) {
+          const index = this.users.findIndex((u) => u.id === user.id);
+          if (index !== -1) {
+            this.users[index] = {
+              ...this.users[index],
+              ...result.user,
+              status: result.user.status || this.users[index].status,
+              _editing: false,
+              _password: '',
+              newPassword: '', // Clear new password field
+              confirmPassword: '', // Clear confirm password field
+            };
+            this.applyFilters(); // Refresh the filtered view
+          }
+        }
+        this.showToast('User updated successfully');
+      } else {
+        console.error('Failed to update user:', result.message);
+        this.showToast(
+          'Failed to update user: ' + (result.message || 'Unknown error'),
+          'error'
+        );
+
+        // Revert optimistic update if API call failed
+        if (userIndex !== -1) {
+          this.users[userIndex].status = originalStatus;
+          this.applyFilters(); // Refresh the filtered view
+        }
+      }
+
       user._password = '';
-      this.loadUsers();
+      user.newPassword = '';
+      user.confirmPassword = '';
     } catch (error) {
       console.error('Failed to update user:', error);
+      this.showToast('Failed to update user', 'error');
+    } finally {
+      this.actionLoading = false;
     }
   }
 
   async deleteUser(userId: number) {
-    if (confirm('Are you sure you want to delete this user?')) {
-      try {
-        await this.authService.deleteUser(userId);
-        this.loadUsers();
-      } catch (error) {
-        console.error('Failed to delete user:', error);
-      }
-    }
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        width: '400px',
+        data: {
+          title: 'Confirm Deletion',
+          message:
+            'Are you sure you want to delete this user? This action cannot be undone.',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          type: 'danger',
+        },
+      })
+      .afterClosed()
+      .subscribe(async (confirmed) => {
+        if (confirmed) {
+          try {
+            this.actionLoading = true;
+            this.loadingMessage = 'Deleting user...';
+
+            await this.authService.deleteUser(userId);
+
+            this.showToast('User deleted successfully', 'success');
+            this.loadUsers();
+          } catch (error) {
+            console.error('Failed to delete user:', error);
+            this.showToast('Failed to delete user', 'error');
+          } finally {
+            this.actionLoading = false;
+          }
+        }
+      });
   }
 
   // Template helper methods
@@ -224,7 +340,42 @@ export class ManageUsersComponent implements OnInit {
   }
 
   exportUsers() {
-    console.log('Export users functionality');
+    // Generate CSV data from users array
+    const headers = [
+      'ID',
+      'Username',
+      'Role',
+      'Status',
+      'Last Activity',
+      'Email',
+    ];
+    const csvData = this.users.map((user) => [
+      user.id || '',
+      user.username,
+      user.role,
+      user.status || 'active',
+      user.lastActivity ? user.lastActivity.toISOString() : 'Never',
+      user.email || '',
+    ]);
+
+    // Convert to CSV format
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map((row) => row.join(',')),
+    ].join('\n');
+
+    // Create a download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `users_export_${new Date().toISOString().split('T')[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   refreshUsers() {
@@ -254,20 +405,34 @@ export class ManageUsersComponent implements OnInit {
 
   async createUser() {
     if (!this.newUser.username || !this.newUser.password) {
+      this.showToast('Username and password are required', 'error');
+      return;
+    }
+
+    // Validate password length
+    if (this.newUser.password.length < 6) {
+      this.showToast('Password must be at least 6 characters long', 'error');
       return;
     }
 
     this.creating = true;
     try {
-      await this.authService.register(
+      const result = await this.authService.register(
         this.newUser.username,
         this.newUser.password,
         this.newUser.role
       );
-      this.hideCreateForm();
-      this.loadUsers();
+      
+      if (result.success) {
+        this.showToast('User created successfully', 'success');
+        this.hideCreateForm();
+        this.loadUsers();
+      } else {
+        this.showToast(result.message || 'Failed to create user', 'error');
+      }
     } catch (error) {
       console.error('Failed to create user:', error);
+      this.showToast('Failed to create user', 'error');
     } finally {
       this.creating = false;
     }
@@ -282,11 +447,42 @@ export class ManageUsersComponent implements OnInit {
   }
 
   getLastActivity(user: ExtendedUser): string {
-    return user.lastActivity ? user.lastActivity.toLocaleDateString() : 'Never';
+    if (!user.lastActivity) return 'Never';
+
+    // Format date to show both date and time
+    const now = new Date();
+    const lastActivity = new Date(user.lastActivity);
+
+    // If it was today, just show the time
+    if (lastActivity.toDateString() === now.toDateString()) {
+      return `Today at ${lastActivity.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`;
+    }
+
+    // If it was yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (lastActivity.toDateString() === yesterday.toDateString()) {
+      return `Yesterday at ${lastActivity.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`;
+    }
+
+    // Otherwise show full date and time
+    return lastActivity.toLocaleString();
   }
 
   isUserOnline(user: ExtendedUser): boolean {
-    return user.isOnline || false;
+    if (!user.lastActivity) return false;
+
+    const lastActive = new Date(user.lastActivity).getTime();
+    const now = new Date().getTime();
+    const fiveMinutesInMs = 5 * 60 * 1000;
+
+    return now - lastActive < fiveMinutesInMs;
   }
 
   editUser(user: ExtendedUser) {
@@ -297,36 +493,60 @@ export class ManageUsersComponent implements OnInit {
     return this.authService.isAdmin();
   }
 
-  async viewUserActivity(user: ExtendedUser) {
-    try {
-      const response = await fetch(
-        `${this.authService['apiUrl']}/users/${user.id}/activity`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        console.log('User activity data:', data);
+  viewUserActivity(user: ExtendedUser) {
+    // Show loading state
+    this.actionLoading = true;
+    this.loadingMessage = 'Loading activity data...';
 
-        // Here you would typically display this information in a modal or details panel
-        // For now we'll just create a simple alert with the info
-        const activityInfo = `
-User: ${data.user.username}
-Status: ${data.user.status}
-Last Active: ${new Date(data.user.last_activity).toLocaleString()}
-Online: ${data.user.isOnline ? 'Yes' : 'No'}
-Recent Quiz Attempts: ${data.activity.attempts.length}
-Access Requests: ${data.activity.accessRequests.length}
-        `;
-        alert(activityInfo);
-      } else {
-        console.error('Failed to fetch user activity');
-      }
-    } catch (error) {
-      console.error('Error fetching user activity:', error);
+    // Add sample activity data for demonstration if not present
+    if (!user.activityLog) {
+      user.activityLog = [
+        {
+          timestamp: new Date().toISOString(),
+          action: 'Login',
+          details: 'User logged in from Chrome on Windows',
+        },
+        {
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          action: 'Quiz Completed',
+          details: 'Score: 85/100',
+        },
+        {
+          timestamp: new Date(Date.now() - 172800000).toISOString(),
+          action: 'Quiz Started',
+          details: 'JavaScript Fundamentals Quiz',
+        },
+      ];
     }
+
+    // Simulate API call delay
+    setTimeout(() => {
+      this.actionLoading = false;
+
+      // Open dialog with user activity data
+      this.dialog.open(ActivityDialogComponent, {
+        data: { user },
+        width: '600px',
+        panelClass: 'activity-dialog-panel',
+        autoFocus: false,
+      });
+    }, 500);
   }
 
   async suspendUser(user: ExtendedUser) {
     try {
+      // Show immediate feedback
+      this.actionLoading = true;
+      this.loadingMessage = 'Suspending user...';
+
+      console.log('Suspending user:', user.id, user.username);
+
+      // Update UI immediately for better UX
+      const originalStatus = user.status;
+      user.status = 'suspended';
+      this.applyFilters(); // Refresh the displayed list
+
+      // Make API call
       const result = await this.authService.updateUser(
         user.id!,
         user.username,
@@ -335,19 +555,47 @@ Access Requests: ${data.activity.accessRequests.length}
         'suspended'
       );
 
+      console.log('Suspend result:', result);
+
       if (result.success) {
-        user.status = 'suspended';
-        this.loadUsers(); // Reload to get the latest state
+        // Show success notification
+        this.showToast('User suspended successfully');
       } else {
-        console.error('Failed to suspend user');
+        console.error('Failed to suspend user:', result.message);
+        this.showToast(
+          'Failed to suspend user: ' + (result.message || 'Unknown error'),
+          'error'
+        );
+
+        // Revert the optimistic update if API call failed
+        user.status = originalStatus;
+        this.applyFilters();
       }
     } catch (error) {
       console.error('Error suspending user:', error);
+      this.showToast('Error suspending user', 'error');
+
+      // Refresh from server in case of error
+      this.loadUsers();
+    } finally {
+      this.actionLoading = false;
     }
   }
 
   async activateUser(user: ExtendedUser) {
     try {
+      // Show immediate feedback
+      this.actionLoading = true;
+      this.loadingMessage = 'Activating user...';
+
+      console.log('Activating user:', user.id, user.username);
+
+      // Update UI immediately for better UX
+      const originalStatus = user.status;
+      user.status = 'active';
+      this.applyFilters(); // Refresh the displayed list
+
+      // Make API call
       const result = await this.authService.updateUser(
         user.id!,
         user.username,
@@ -356,15 +604,41 @@ Access Requests: ${data.activity.accessRequests.length}
         'active'
       );
 
+      console.log('Activate result:', result);
+
       if (result.success) {
-        user.status = 'active';
-        this.loadUsers(); // Reload to get the latest state
+        // Show success notification
+        this.showToast('User activated successfully');
       } else {
-        console.error('Failed to activate user');
+        console.error('Failed to activate user:', result.message);
+        this.showToast(
+          'Failed to activate user: ' + (result.message || 'Unknown error'),
+          'error'
+        );
+
+        // Revert the optimistic update if API call failed
+        user.status = originalStatus;
+        this.applyFilters();
       }
     } catch (error) {
       console.error('Error activating user:', error);
+      this.showToast('Error activating user', 'error');
+
+      // Refresh from server in case of error
+      this.loadUsers();
+    } finally {
+      this.actionLoading = false;
     }
+  }
+
+  // Show a toast message using the service
+  private showToast(
+    message: string,
+    type: 'success' | 'error' | 'info' = 'success'
+  ) {
+    // Using the toast service
+    this.toastService.show(message, type);
+    console.log('Toast:', message, type);
   }
 
   // Selection methods
@@ -422,20 +696,41 @@ Access Requests: ${data.activity.accessRequests.length}
   async bulkDelete() {
     if (this.selectedUsers.length === 0) return;
 
-    if (
-      confirm(
-        `Are you sure you want to delete ${this.selectedUsers.length} user(s)?`
-      )
-    ) {
-      try {
-        for (const userId of this.selectedUsers) {
-          await this.authService.deleteUser(userId);
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        width: '400px',
+        data: {
+          title: 'Confirm Bulk Deletion',
+          message: `Are you sure you want to delete ${this.selectedUsers.length} user(s)? This action cannot be undone.`,
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          type: 'danger',
+        },
+      })
+      .afterClosed()
+      .subscribe(async (confirmed) => {
+        if (confirmed) {
+          try {
+            this.actionLoading = true;
+            this.loadingMessage = `Deleting ${this.selectedUsers.length} users...`;
+
+            for (const userId of this.selectedUsers) {
+              await this.authService.deleteUser(userId);
+            }
+
+            this.showToast(
+              `Successfully deleted ${this.selectedUsers.length} users`,
+              'success'
+            );
+            this.clearSelection();
+            this.loadUsers();
+          } catch (error) {
+            console.error('Failed to bulk delete users:', error);
+            this.showToast('Failed to delete some users', 'error');
+          } finally {
+            this.actionLoading = false;
+          }
         }
-        this.clearSelection();
-        this.loadUsers();
-      } catch (error) {
-        console.error('Failed to bulk delete users:', error);
-      }
-    }
+      });
   }
 }

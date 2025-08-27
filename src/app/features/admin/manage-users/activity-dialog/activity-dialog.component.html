@@ -1,0 +1,69 @@
+<div class="activity-dialog">
+  <div class="dialog-header">
+    <h2>User Activity - {{ data.user.username }}</h2>
+    <button class="close-btn" (click)="close()">✕</button>
+  </div>
+
+  <div class="dialog-content">
+    <div class="user-summary">
+      <div class="user-avatar">
+        {{ data.user.username.charAt(0).toUpperCase() }}
+      </div>
+      <div class="user-details">
+        <h3>{{ data.user.username }}</h3>
+        <p class="user-status" [ngClass]="'status-' + data.user.status">
+          {{
+            data.user.status === "active"
+              ? "✅ Active"
+              : data.user.status === "suspended"
+              ? "🚫 Suspended"
+              : "❌ Inactive"
+          }}
+        </p>
+      </div>
+    </div>
+
+    <div class="activity-stats">
+      <div class="stat-card">
+        <span class="stat-title">Last Login</span>
+        <span class="stat-value">{{ data.user.lastLogin || "Never" }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">Created On</span>
+        <span class="stat-value">{{ data.user.createdAt || "Unknown" }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">Quiz Completions</span>
+        <span class="stat-value">{{ data.user.quizCompletions || 0 }}</span>
+      </div>
+    </div>
+
+    <div class="activity-timeline">
+      <h4>Recent Activity</h4>
+      @if (data.user.activityLog && data.user.activityLog.length > 0) {
+      <ul class="timeline">
+        @for (activity of data.user.activityLog; track activity.timestamp) {
+        <li class="timeline-item">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <p class="activity-action">{{ activity.action }}</p>
+            <p class="activity-time">{{ activity.timestamp }}</p>
+            @if (activity.details) {
+            <p class="activity-details">{{ activity.details }}</p>
+            }
+          </div>
+        </li>
+        }
+      </ul>
+      } @else {
+      <div class="empty-activity">
+        <p>No recent activity recorded for this user</p>
+      </div>
+      }
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="btn btn-primary" (click)="close()">Close</button>
+  </div>
+</div>

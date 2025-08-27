@@ -1,0 +1,122 @@
+/* User management compact grid styles */
+.user-access-management {
+  /* Compact grid styling */
+  .compact-grid {
+    .table-header {
+      background-color: #f5f7fa;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .compact-row {
+      height: auto;
+      min-height: 50px;
+      font-size: 0.9rem;
+
+      .table-cell {
+        padding: 6px 12px;
+
+        &.user-info {
+          .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+          }
+
+          .user-details {
+            .user-name {
+              font-size: 0.9rem;
+            }
+
+            .user-email,
+            .user-id {
+              font-size: 0.75rem;
+            }
+          }
+        }
+
+        &.role-status {
+          .role-badge,
+          .status-badge {
+            padding: 2px 6px;
+            font-size: 0.75rem;
+          }
+        }
+
+        &.permissions {
+          .permission-item {
+            font-size: 0.75rem;
+            margin: 2px 0;
+          }
+        }
+
+        &.activity {
+          .activity-info {
+            font-size: 0.75rem;
+          }
+        }
+
+        &.actions {
+          .action-buttons {
+            flex-wrap: wrap;
+            gap: 4px;
+
+            .btn {
+              padding: 4px 8px;
+              font-size: 0.75rem;
+
+              &.activity-btn {
+                position: relative;
+                transition: all 0.3s;
+
+                &:hover {
+                  background-color: #3f51b5;
+                  color: white;
+                  transform: scale(1.05);
+                }
+
+                &:active {
+                  transform: scale(0.95);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      &:hover {
+        background-color: rgba(63, 81, 181, 0.05);
+      }
+    }
+  }
+}
+
+/* Dialog overlay styling */
+.cdk-overlay-container {
+  .cdk-overlay-pane.activity-dialog-panel {
+    max-width: 90vw !important;
+    width: 600px;
+  }
+}
+
+/* Loading/action indicator styles */
+.loading-message {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  font-size: 0.85rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}

@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 import { QuizPageComponent } from './features/quiz/quiz-page/quiz-page';
 import { AuthPage } from './features/auth/auth-page/auth-page';
-import { AdminPage } from './features/admin/admin-page/admin-page';
 import { DashboardPage } from './features/dashboard/dashboard-page/dashboard-page';
 import { UserDashboardPage } from './features/user-dashboard/user-dashboard-page';
 import { ManageUsersComponent } from './features/admin/manage-users/manage-users.component';
 import { QuizAccessManagementComponent } from './features/admin/quiz-access-management/quiz-access-management.component';
+import { QuizManagementComponent } from './features/admin/quiz-management/quiz-management.component';
 
 function adminGuard() {
   // lightweight inline guard; replace with proper CanActivate if needed
@@ -22,7 +22,7 @@ export const routes: Routes = [
   { path: 'quiz', component: QuizPageComponent },
   { path: 'quiz/:id', component: QuizPageComponent },
   { path: 'auth', component: AuthPage },
-  { path: 'admin', component: AdminPage },
+  { path: 'dashboard', component: DashboardPage, data: { isAdminView: true }, canActivate: [adminGuard] as any },
   {
     path: 'admin/manage-users',
     component: ManageUsersComponent,
@@ -33,7 +33,11 @@ export const routes: Routes = [
     component: QuizAccessManagementComponent,
     canActivate: [adminGuard] as any,
   },
-  { path: 'dashboard', component: DashboardPage },
+  {
+    path: 'admin/quiz-management',
+    component: QuizManagementComponent,
+    canActivate: [adminGuard] as any,
+  },
   { path: 'user-dashboard', component: UserDashboardPage },
   { path: '**', redirectTo: 'auth' }, // Wildcard route for 404s
 ];

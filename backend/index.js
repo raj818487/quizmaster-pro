@@ -19,12 +19,15 @@ const db = new Database(dbPath);
 
 // Database helper functions
 const getUsers = () => db.prepare("SELECT * FROM users").all();
-const getUserById = (id) =>
-  db
+const getUserById = (id) => {
+  const user = db
     .prepare(
       "SELECT id, username, role, status, last_activity FROM users WHERE id = ?"
     )
     .get(id);
+  console.log("Retrieved user by ID:", id, user);
+  return user;
+};
 const getUserByUsername = (username) =>
   db
     .prepare(
@@ -194,12 +197,10 @@ app.post("/api/auth/register", (req, res) => {
   const result = db
     .prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
     .run(username, password, role);
-  return res
-    .status(201)
-    .json({
-      success: true,
-      user: { id: result.lastInsertRowid, username, role },
-    });
+  return res.status(201).json({
+    success: true,
+    user: { id: result.lastInsertRowid, username, role },
+  });
 });
 
 app.get("/api/users", (_req, res) => {
@@ -405,12 +406,10 @@ app.delete("/api/quizzes/:id", (req, res) => {
         .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
         .get(userId);
       if (!isAdmin) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            message: "Unauthorized to delete this quiz",
-          });
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized to delete this quiz",
+        });
       }
     }
 
@@ -437,12 +436,10 @@ app.post("/api/quizzes/:id/questions", (req, res) => {
   } = req.body || {};
 
   if (!text || !correct_answer) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Question text and correct answer are required",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Question text and correct answer are required",
+    });
   }
 
   try {
@@ -460,12 +457,10 @@ app.post("/api/quizzes/:id/questions", (req, res) => {
         .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
         .get(user_id);
       if (!isAdmin) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            message: "Unauthorized to add question to this quiz",
-          });
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized to add question to this quiz",
+        });
       }
     }
 
@@ -518,12 +513,10 @@ app.put("/api/questions/:id", (req, res) => {
           .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
           .get(user_id);
         if (!isAdmin) {
-          return res
-            .status(403)
-            .json({
-              success: false,
-              message: "Unauthorized to edit this question",
-            });
+          return res.status(403).json({
+            success: false,
+            message: "Unauthorized to edit this question",
+          });
         }
       }
     }
@@ -573,12 +566,10 @@ app.delete("/api/questions/:id", (req, res) => {
           .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
           .get(userId);
         if (!isAdmin) {
-          return res
-            .status(403)
-            .json({
-              success: false,
-              message: "Unauthorized to delete this question",
-            });
+          return res.status(403).json({
+            success: false,
+            message: "Unauthorized to delete this question",
+          });
         }
       }
     }
@@ -706,6 +697,7 @@ app.put("/api/users/:id", (req, res) => {
   const { username, password, role, status } = req.body || {};
 
   try {
+    console.log("Updating user:", id, "with data:", req.body);
     const user = getUserById(id);
     if (!user)
       return res
@@ -723,6 +715,8 @@ app.put("/api/users/:id", (req, res) => {
           .json({ success: false, message: "Username already exists" });
       }
     }
+
+    console.log("Current user status:", user.status, "New status:", status);
 
     // Build the update SQL dynamically based on provided fields
     let updateFields = [];
@@ -759,10 +753,15 @@ app.put("/api/users/:id", (req, res) => {
       const updateQuery = `UPDATE users SET ${updateFields.join(
         ", "
       )} WHERE id = ?`;
-      db.prepare(updateQuery).run(...params);
+      console.log("Running update query:", updateQuery, "with params:", params);
+
+      const result = db.prepare(updateQuery).run(...params);
+      console.log("Update result:", result);
 
       // Get the updated user
       const updatedUser = getUserById(id);
+      console.log("Updated user:", updatedUser);
+
       return res.json({ success: true, user: updatedUser });
     } else {
       return res
@@ -771,9 +770,15 @@ app.put("/api/users/:id", (req, res) => {
     }
   } catch (error) {
     console.error("Update user error:", error);
+    console.error("Request body:", req.body);
+    console.error("Update fields:", updateFields);
+    console.error("Update params:", params);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to update user" });
+      .json({
+        success: false,
+        message: "Failed to update user: " + error.message,
+      });
   }
 });
 
@@ -939,37 +944,187 @@ app.get("/api/users/:id/attempts", (req, res) => {
   }
 });
 
-// Stats endpoint
+// Enhanced stats endpoint for dashboard
 app.get("/api/stats", (_req, res) => {
   try {
+    // Basic counts
     const totalQuizzes = db
       .prepare("SELECT COUNT(*) as count FROM quizzes")
       .get().count;
+    
+    const totalUsers = db
+      .prepare("SELECT COUNT(*) as count FROM users")
+      .get().count;
+    
+    const activeUsers = db
+      .prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'")
+      .get().count;
+    
     const totalAttempts = db
       .prepare("SELECT COUNT(*) as count FROM quiz_attempts")
       .get().count;
+    
     const completedAttempts = db
-      .prepare("SELECT * FROM quiz_attempts WHERE completed_at IS NOT NULL")
+      .prepare("SELECT COUNT(*) as count FROM quiz_attempts WHERE completed_at IS NOT NULL")
+      .get().count;
+
+    // Calculate success rate (percentage of completed attempts with passing scores)
+    const passingAttempts = db
+      .prepare(`
+        SELECT COUNT(*) as count 
+        FROM quiz_attempts 
+        WHERE completed_at IS NOT NULL 
+        AND (score * 100.0 / total_questions) >= 60
+      `)
+      .get().count;
+
+    const successRate = completedAttempts > 0 
+      ? Math.round((passingAttempts / completedAttempts) * 100) 
+      : 0;
+
+    // Calculate average score
+    const avgScoreResult = db
+      .prepare(`
+        SELECT AVG(score * 100.0 / total_questions) as avgScore 
+        FROM quiz_attempts 
+        WHERE completed_at IS NOT NULL AND total_questions > 0
+      `)
+      .get();
+    
+    const averageScore = avgScoreResult.avgScore 
+      ? Math.round(avgScoreResult.avgScore * 10) / 10 
+      : 0;
+
+    // Recent activity data
+    const recentQuizzes = db
+      .prepare(`
+        SELECT q.title, q.created_at, u.username as created_by
+        FROM quizzes q
+        LEFT JOIN users u ON q.created_by = u.id
+        ORDER BY q.created_at DESC
+        LIMIT 5
+      `)
       .all();
 
-    const averageScore = completedAttempts.length
-      ? completedAttempts.reduce(
-          (sum, a) => sum + (a.score * 100) / (a.total_questions || 1),
-          0
-        ) / completedAttempts.length
-      : 0;
+    const recentAttempts = db
+      .prepare(`
+        SELECT qa.completed_at, qa.score, qa.total_questions,
+               u.username, q.title as quiz_title
+        FROM quiz_attempts qa
+        JOIN users u ON qa.user_id = u.id
+        JOIN quizzes q ON qa.quiz_id = q.id
+        WHERE qa.completed_at IS NOT NULL
+        ORDER BY qa.completed_at DESC
+        LIMIT 5
+      `)
+      .all();
 
     res.json({
       success: true,
       stats: {
         totalQuizzes,
+        totalUsers,
+        activeUsers,
         totalAttempts,
-        averageScore: Math.round(averageScore * 10) / 10,
+        completedAttempts,
+        successRate,
+        averageScore,
+        recentQuizzes,
+        recentAttempts
       },
     });
   } catch (error) {
     console.error("Stats error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch stats" });
+  }
+});
+
+// Admin metrics endpoint (requires admin access)
+app.get("/api/admin/metrics", (req, res) => {
+  try {
+    // User statistics
+    const totalUsers = db
+      .prepare("SELECT COUNT(*) as count FROM users")
+      .get().count;
+    
+    const activeUsers = db
+      .prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'")
+      .get().count;
+    
+    const adminUsers = db
+      .prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'")
+      .get().count;
+
+    // Access requests
+    const pendingAccessRequests = db
+      .prepare("SELECT COUNT(*) as count FROM access_requests WHERE status = 'pending'")
+      .get().count;
+
+    // System health calculation (based on recent activity)
+    const recentActivity = db
+      .prepare(`
+        SELECT COUNT(*) as count 
+        FROM quiz_attempts 
+        WHERE created_at >= datetime('now', '-7 days')
+      `)
+      .get().count;
+    
+    const systemHealthScore = Math.min(100, Math.max(70, 70 + (recentActivity * 2)));
+
+    // Storage calculation (estimate based on data volume)
+    const totalRecords = db
+      .prepare(`
+        SELECT 
+          (SELECT COUNT(*) FROM users) +
+          (SELECT COUNT(*) FROM quizzes) +
+          (SELECT COUNT(*) FROM questions) +
+          (SELECT COUNT(*) FROM quiz_attempts) +
+          (SELECT COUNT(*) FROM user_answers) as total
+      `)
+      .get().total;
+    
+    const storageUsed = Math.min(100, Math.round((totalRecords / 10000) * 100));
+
+    // Recent user registrations
+    const recentUsers = db
+      .prepare(`
+        SELECT username, role, last_activity 
+        FROM users 
+        WHERE id > (SELECT MAX(id) - 10 FROM users)
+        ORDER BY id DESC
+        LIMIT 5
+      `)
+      .all();
+
+    // Quiz activity by day (last 7 days)
+    const dailyActivity = db
+      .prepare(`
+        SELECT 
+          DATE(started_at) as date,
+          COUNT(*) as attempts
+        FROM quiz_attempts 
+        WHERE started_at >= datetime('now', '-7 days')
+        GROUP BY DATE(started_at)
+        ORDER BY date DESC
+      `)
+      .all();
+
+    res.json({
+      success: true,
+      metrics: {
+        totalUsers,
+        activeUsers,
+        adminUsers,
+        pendingAccessRequests,
+        systemHealthScore,
+        storageUsed,
+        recentUsers,
+        dailyActivity
+      },
+    });
+  } catch (error) {
+    console.error("Admin metrics error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch admin metrics" });
   }
 });
 
@@ -1171,12 +1326,10 @@ app.put("/api/quiz-assignments/bulk", (req, res) => {
     res.json({ success: true, assignments: updatedAssignments });
   } catch (error) {
     console.error("Bulk assignment error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to process bulk assignment update",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to process bulk assignment update",
+    });
   }
 });
 
@@ -1333,12 +1486,10 @@ app.get("/api/users/:id/access-requests", (req, res) => {
     res.json({ success: true, requests });
   } catch (error) {
     console.error("Get user access requests error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch user access requests",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user access requests",
+    });
   }
 });
 
@@ -1353,12 +1504,10 @@ app.put("/api/access-requests/:id", (req, res) => {
   }
 
   if (!["approved", "rejected"].includes(status)) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: 'Status must be "approved" or "rejected"',
-      });
+    return res.status(400).json({
+      success: false,
+      message: 'Status must be "approved" or "rejected"',
+    });
   }
 
   try {
