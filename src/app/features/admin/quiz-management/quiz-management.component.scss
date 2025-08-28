@@ -687,70 +687,168 @@
     }
   }
   
-  // Modal styles
+  // Enhanced Modal styles
   .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
     overflow-y: auto;
     padding: 20px;
+    animation: overlayFadeIn 0.3s ease-out;
   }
   
   .confirmation-dialog {
     background: white;
-    border-radius: 12px;
+    border-radius: 20px;
     width: 90%;
-    max-width: 450px;
-    overflow-y: auto;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    animation: modalFadeIn 0.3s ease-in-out;
+    max-width: 480px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    animation: dialogSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1px solid #f1f5f9;
     
     .dialog-header {
-      padding: 1rem;
-      border-bottom: 1px solid #eee;
+      padding: 2rem 2rem 1rem 2rem;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border-bottom: 2px solid #e2e8f0;
+      position: relative;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+      }
       
       h4 {
         margin: 0;
-        font-size: 1.25rem;
-        color: #333;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        
+        &::before {
+          content: '⚠️';
+          font-size: 1.8rem;
+        }
       }
     }
     
     .dialog-body {
-      padding: 1rem;
+      padding: 2rem;
       
       p {
-        margin: 0 0 0.5rem;
-        font-size: 1rem;
-        line-height: 1.5;
+        margin: 0 0 1rem;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #374151;
+        
+        strong {
+          color: #1e293b;
+          font-weight: 600;
+        }
       }
       
       .warning-text {
-        color: #e53935;
-        font-size: 0.9rem;
-        margin-top: 1rem;
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        border: 1px solid #fecaca;
+        border-left: 4px solid #ef4444;
+        padding: 1rem;
+        border-radius: 12px;
+        color: #dc2626;
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin-top: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        
+        &::before {
+          content: '🚨';
+          font-size: 1.2rem;
+        }
       }
     }
     
     .dialog-footer {
-      padding: 1rem;
-      border-top: 1px solid #eee;
+      padding: 1.5rem 2rem 2rem 2rem;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
       display: flex;
       justify-content: flex-end;
-      gap: 0.5rem;
+      gap: 1rem;
+      
+      .btn {
+        padding: 0.75rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        
+        &.btn-secondary {
+          background: #f1f5f9;
+          color: #64748b;
+          border: 2px solid #e2e8f0;
+          
+          &:hover {
+            background: #e2e8f0;
+            color: #475569;
+            transform: translateY(-1px);
+          }
+        }
+        
+        &.btn-danger {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          color: white;
+          box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+          
+          &:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
+          }
+          
+          &:active {
+            transform: translateY(0);
+          }
+        }
+      }
     }
   }
   
-  @keyframes modalFadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+  @keyframes overlayFadeIn {
+    from { 
+      opacity: 0;
+    }
+    to { 
+      opacity: 1;
+    }
+  }
+  
+  @keyframes dialogSlideIn {
+    from { 
+      opacity: 0; 
+      transform: translateY(-30px) scale(0.95);
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0) scale(1);
+    }
   }
 
   @keyframes spin {

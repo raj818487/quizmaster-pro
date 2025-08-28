@@ -157,6 +157,10 @@ export class DashboardPage implements OnInit {
     this.router.navigate(['/admin/quiz-access']);
   }
 
+  navigateToDbManagement() {
+    this.router.navigate(['/admin/db-management']);
+  }
+
   navigateToReports() {
     this.router.navigate(['/reports']);
   }

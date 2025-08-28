@@ -6,6 +6,7 @@ import { UserDashboardPage } from './features/user-dashboard/user-dashboard-page
 import { ManageUsersComponent } from './features/admin/manage-users/manage-users.component';
 import { QuizAccessManagementComponent } from './features/admin/quiz-access-management/quiz-access-management.component';
 import { QuizManagementComponent } from './features/admin/quiz-management/quiz-management.component';
+import { DbManagementComponent } from './features/admin/db-management/db-management.component';
 
 function adminGuard() {
   // lightweight inline guard; replace with proper CanActivate if needed
@@ -36,6 +37,11 @@ export const routes: Routes = [
   {
     path: 'admin/quiz-management',
     component: QuizManagementComponent,
+    canActivate: [adminGuard] as any,
+  },
+  {
+    path: 'admin/db-management',
+    component: DbManagementComponent,
     canActivate: [adminGuard] as any,
   },
   { path: 'user-dashboard', component: UserDashboardPage },

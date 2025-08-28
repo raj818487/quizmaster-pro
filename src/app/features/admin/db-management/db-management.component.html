@@ -1,11 +1,176 @@
-<div class="db-mgmt">
-  <h2>Database Management</h2>
-  <div class="card">
-    <div><strong>Mode:</strong> {{ status?.dbMode }}</div>
-    <div><strong>Initialized:</strong> {{ status?.initialized }}</div>
-    <div><strong>Schema Version:</strong> {{ status?.schemaVersion }}</div>
-    <div><strong>Tables:</strong> {{ status?.tables?.join(", ") }}</div>
+<div class="db-management">
+  <div class="header">
+    <h2>Database Management</h2>
+    <p class="description">Execute SQL queries and manage database tables</p>
   </div>
 
-  <!-- DB management removed -->
+  <!-- Loading Overlay -->
+  <div *ngIf="loading()" class="loading-overlay">
+    <div class="spinner"></div>
+    <p>Executing query...</p>
+  </div>
+
+  <div class="content-grid">
+    <!-- Left Panel: Tables and Queries -->
+    <div class="left-panel">
+      <!-- Database Tables -->
+      <div class="section">
+        <h3>Database Tables</h3>
+        <div class="table-list">
+          <div 
+            *ngFor="let table of tables()" 
+            class="table-item"
+            [class.selected]="selectedTable() === table.name"
+          >
+            <div class="table-info">
+              <span class="table-name">{{ table.name }}</span>
+              <span class="row-count">{{ table.rowCount }} rows</span>
+            </div>
+            <div class="table-actions">
+              <button 
+                class="btn btn-sm btn-secondary" 
+                (click)="showTableData(table.name)"
+                title="View data"
+              >
+                📊 Data
+              </button>
+              <button 
+                class="btn btn-sm btn-outline" 
+                (click)="showTableSchema(table.name)"
+                title="View schema"
+              >
+                🔧 Schema
+              </button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" (click)="loadTables()">
+          🔄 Refresh Tables
+        </button>
+      </div>
+
+      <!-- Common Queries -->
+      <div class="section">
+        <h3>Common Queries</h3>
+        <div class="query-list">
+          <button 
+            *ngFor="let query of commonQueries"
+            class="query-button"
+            (click)="selectCommonQuery(query.query)"
+            [title]="query.query"
+          >
+            {{ query.name }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Query History -->
+      <div class="section" *ngIf="queryHistory.length > 0">
+        <h3>Query History</h3>
+        <div class="history-list">
+          <div 
+            *ngFor="let historyQuery of queryHistory" 
+            class="history-item"
+            (click)="selectFromHistory(historyQuery)"
+            [title]="historyQuery"
+          >
+            {{ historyQuery.length > 50 ? historyQuery.substring(0, 50) + '...' : historyQuery }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Query Editor and Results -->
+    <div class="right-panel">
+      <!-- SQL Query Editor -->
+      <div class="section">
+        <h3>SQL Query Editor</h3>
+        <div class="query-editor">
+          <textarea
+            [(ngModel)]="sqlQuery"
+            placeholder="Enter your SQL query here..."
+            class="sql-textarea"
+            rows="8"
+          ></textarea>
+          <div class="editor-actions">
+            <button 
+              class="btn btn-primary" 
+              (click)="executeQuery()"
+              [disabled]="loading() || !sqlQuery.trim()"
+            >
+              ▶️ Execute Query
+            </button>
+            <button 
+              class="btn btn-secondary" 
+              (click)="clearQuery()"
+            >
+              🗑️ Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Query Results -->
+      <div class="section" *ngIf="queryResult()">
+        <div class="results-header">
+          <h3>Query Results</h3>
+          <button class="btn btn-sm btn-outline" (click)="clearResults()">
+            ✖️ Clear Results
+          </button>
+        </div>
+
+        <!-- Error Display -->
+        <div *ngIf="!queryResult()?.success" class="error-result">
+          <div class="error-icon">❌</div>
+          <div class="error-message">
+            <strong>Error:</strong> {{ queryResult()?.error || queryResult()?.message }}
+          </div>
+        </div>
+
+        <!-- Success Display -->
+        <div *ngIf="queryResult()?.success" class="success-result">
+          <!-- Result Info -->
+          <div class="result-info">
+            <span class="success-icon">✅</span>
+            <span>Query executed successfully</span>
+            <span *ngIf="queryResult()?.rowCount !== undefined" class="row-count">
+              ({{ queryResult()?.rowCount }} rows)
+            </span>
+          </div>
+
+          <!-- Data Table -->
+          <div *ngIf="queryResult()?.data && queryResult()?.data!.length > 0" class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th *ngFor="let column of queryResult()?.columns">{{ column }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of queryResult()?.data; let i = index; trackBy: trackByIndex">
+                  <td *ngFor="let column of queryResult()?.columns" 
+                      [title]="formatValue(row[column])">
+                    {{ formatValue(row[column]) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- No Data Message -->
+          <div *ngIf="queryResult()?.data && queryResult()?.data!.length === 0" class="no-data">
+            <div class="no-data-icon">📄</div>
+            <p>Query executed successfully but returned no data.</p>
+          </div>
+
+          <!-- Non-SELECT Query Result -->
+          <div *ngIf="!queryResult()?.data && queryResult()?.success" class="operation-success">
+            <div class="success-icon">✅</div>
+            <p>Operation completed successfully.</p>
+            <p *ngIf="queryResult()?.message">{{ queryResult()?.message }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

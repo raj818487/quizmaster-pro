@@ -1,16 +1,17 @@
 <div class="user-dashboard">
-  <!-- Modern Category Cards -->
+  <!-- 2x2 Category Cards Grid -->
   <div class="category-grid">
+    <!-- Top Row -->
     <div
       class="category-card"
-      [class.active]="activeCategory === 'assigned'"
-      (click)="setActiveCategory('assigned')"
+      [class.active]="activeCategory === 'all'"
+      (click)="setActiveCategory('all')"
     >
-      <div class="card-icon">📋</div>
+      <div class="card-icon">�</div>
       <div class="card-content">
-        <h3>My Assigned Quizzes</h3>
-        <p>Quizzes specifically assigned to you</p>
-        <span class="quiz-count">{{ getAssignedCount() }} quizzes</span>
+        <h3>All Quizzes</h3>
+        <p>Browse all available quizzes</p>
+        <span class="quiz-count">{{ getAllCount() }} total</span>
       </div>
     </div>
 
@@ -22,11 +23,12 @@
       <div class="card-icon">🌐</div>
       <div class="card-content">
         <h3>Public Quizzes</h3>
-        <p>Open quizzes available to everyone</p>
+        <p>Open quizzes for everyone</p>
         <span class="quiz-count">{{ getPublicCount() }} quizzes</span>
       </div>
     </div>
 
+    <!-- Bottom Row -->
     <div
       class="category-card"
       [class.active]="activeCategory === 'private'"
@@ -42,14 +44,14 @@
 
     <div
       class="category-card"
-      [class.active]="activeCategory === 'all'"
-      (click)="setActiveCategory('all')"
+      [class.active]="activeCategory === 'assigned'"
+      (click)="setActiveCategory('assigned')"
     >
-      <div class="card-icon">📚</div>
+      <div class="card-icon">�</div>
       <div class="card-content">
-        <h3>All Quizzes</h3>
-        <p>Browse all available quizzes</p>
-        <span class="quiz-count">{{ getAllCount() }} total</span>
+        <h3>My Assigned</h3>
+        <p>Quizzes assigned to you</p>
+        <span class="quiz-count">{{ getAssignedCount() }} quizzes</span>
       </div>
     </div>
   </div>
@@ -135,13 +137,12 @@
           [class.btn-primary]="quiz.can_start"
           [class.btn-secondary]="!quiz.can_start && quiz.access_status !== 'no_access'"
           [class.btn-request]="!quiz.can_start && quiz.access_status === 'no_access' && quiz.assignment_status === 'not_assigned'"
-          [disabled]="quiz.access_status === 'pending_request'"
+          [class.btn-pending]="quiz.access_status === 'pending_request' || isRequestingAccess(quiz.id!)"
+          [disabled]="isRequestButtonDisabled(quiz)"
           (click)="startQuiz(quiz)"
         >
-          {{ quiz.can_start ? 'Start Quiz' : quiz.access_status ===
-          'pending_request' ? 'Request Pending' : quiz.access_status ===
-          'no_access' && quiz.assignment_status === 'not_assigned' ? 'Request
-          Access' : 'Cannot Start' }}
+          <span *ngIf="isRequestingAccess(quiz.id!) && quiz.access_status === 'no_access'" class="spinner-inline"></span>
+          {{ quiz.can_start ? 'Start Quiz' : getRequestButtonText(quiz) }}
         </button>
         <button class="btn btn-secondary" (click)="viewQuizDetails(quiz)">
           View Details

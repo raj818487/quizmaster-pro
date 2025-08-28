@@ -4,15 +4,39 @@
   padding: 1.5rem;
   background: #f8fafc;
   min-height: 100vh;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+  }
 }
 
 // Welcome Header
 .dashboard-header {
   margin-bottom: 2rem;
+
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+  }
   
   .welcome-section {
     text-align: center;
     padding: 2rem 0;
+
+    @media (max-width: 768px) {
+      padding: 1.5rem 0;
+    }
+
+    @media (max-width: 480px) {
+      padding: 1rem 0;
+    }
     
     h1 {
       font-size: 2.5rem;
@@ -23,33 +47,105 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+
+      @media (max-width: 768px) {
+        font-size: 2rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 1.5rem;
+      }
     }
     
     p {
       font-size: 1.1rem;
       color: #64748b;
       margin: 0;
+
+      @media (max-width: 768px) {
+        font-size: 1rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 0.9rem;
+      }
     }
   }
 }
 
-// Modern Category Cards Grid
+// Modern Category Cards Grid - Responsive Layout
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(4, 1fr); // 4 columns in one row for big screens
+  gap: 1rem;
+  margin-bottom: 2rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+
+  @media (max-width: 1024px) {
+    gap: 0.875rem;
+    max-width: 900px;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr; // 2x2 grid for tablets and mobile
+    grid-template-rows: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    max-width: 400px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+    max-width: 350px;
+  }
+
+  @media (max-width: 360px) {
+    max-width: 320px;
+    gap: 0.5rem;
+  }
 }
 
 .category-card {
   background: white;
-  border-radius: 20px;
-  padding: 2rem;
+  border-radius: 16px;
+  padding: 1.25rem;
   border: 2px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+
+  @media (max-width: 1024px) {
+    padding: 1rem;
+    min-height: 110px;
+    border-radius: 14px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    border-radius: 12px;
+    min-height: 100px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.875rem;
+    border-radius: 10px;
+    min-height: 90px;
+  }
+
+  @media (max-width: 360px) {
+    min-height: 85px;
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
   
   &::before {
     content: '';
@@ -67,6 +163,14 @@
     transform: translateY(-8px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     border-color: #3b82f6;
+
+    @media (max-width: 768px) {
+      transform: translateY(-4px);
+    }
+
+    @media (max-width: 480px) {
+      transform: translateY(-2px);
+    }
     
     &::before {
       transform: scaleX(1);
@@ -74,6 +178,10 @@
     
     .card-icon {
       transform: scale(1.2) rotate(5deg);
+
+      @media (max-width: 480px) {
+        transform: scale(1.1) rotate(3deg);
+      }
     }
   }
   
@@ -97,37 +205,119 @@
   }
   
   .card-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    font-size: 2.2rem;
+    margin-bottom: 0.75rem;
     display: block;
     transition: all 0.3s ease;
+
+    @media (max-width: 1024px) {
+      font-size: 2rem;
+      margin-bottom: 0.6rem;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.6rem;
+      margin-bottom: 0.4rem;
+    }
+
+    @media (max-width: 360px) {
+      font-size: 1.4rem;
+      margin-bottom: 0.3rem;
+    }
   }
   
   .card-content {
     h3 {
-      font-size: 1.3rem;
+      font-size: 1rem;
       font-weight: 600;
       color: #1e293b;
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 0.4rem 0;
       transition: color 0.3s ease;
+
+      @media (max-width: 1024px) {
+        font-size: 0.95rem;
+        margin-bottom: 0.35rem;
+      }
+
+      @media (max-width: 768px) {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+      }
+
+      @media (max-width: 360px) {
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
+      }
     }
     
     p {
       color: #64748b;
-      margin: 0 0 1rem 0;
-      font-size: 0.95rem;
-      line-height: 1.5;
+      margin: 0 0 0.5rem 0;
+      font-size: 0.75rem;
+      line-height: 1.3;
+
+      @media (max-width: 1024px) {
+        font-size: 0.7rem;
+        margin-bottom: 0.45rem;
+      }
+
+      @media (max-width: 768px) {
+        font-size: 0.68rem;
+        margin-bottom: 0.4rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 0.65rem;
+        margin-bottom: 0.35rem;
+      }
+
+      @media (max-width: 360px) {
+        font-size: 0.62rem;
+        margin-bottom: 0.3rem;
+      }
     }
     
     .quiz-count {
       display: inline-block;
       background: #f1f5f9;
       color: #475569;
-      padding: 0.4rem 1rem;
-      border-radius: 20px;
-      font-size: 0.85rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 12px;
+      font-size: 0.7rem;
       font-weight: 600;
       transition: all 0.3s ease;
+
+      @media (max-width: 1024px) {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.68rem;
+        border-radius: 10px;
+      }
+
+      @media (max-width: 768px) {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.65rem;
+        border-radius: 8px;
+      }
+
+      @media (max-width: 480px) {
+        padding: 0.2rem 0.45rem;
+        font-size: 0.62rem;
+      }
+
+      @media (max-width: 360px) {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.6rem;
+      }
     }
   }
 }
@@ -137,23 +327,53 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.5rem;
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    margin-bottom: 1.25rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+  }
   
   h2 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #1e293b;
     margin: 0;
     display: flex;
     align-items: center;
     gap: 0.75rem;
+
+    @media (max-width: 768px) {
+      font-size: 1.3rem;
+      gap: 0.6rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.1rem;
+      gap: 0.5rem;
+    }
     
     .category-icon {
-      font-size: 2rem;
+      font-size: 1.8rem;
+
+      @media (max-width: 768px) {
+        font-size: 1.6rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 1.4rem;
+      }
     }
   }
   
@@ -163,8 +383,8 @@
     gap: 0.5rem;
     background: #f8fafc;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
     color: #475569;
     font-weight: 600;
     cursor: pointer;
@@ -190,20 +410,42 @@
 // Keep existing styles for quiz cards and other elements
 .quizzes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
 }
 
 .quiz-card {
   background: white;
-  border-radius: 20px;
-  padding: 2rem;
+  border-radius: 16px;
+  padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.4s ease;
   border: 1px solid #f1f5f9;
   position: relative;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1rem;
+    border-radius: 12px;
+  }
 
   &::before {
     content: '';
@@ -415,11 +657,34 @@
       }
     }
 
+    &.btn-pending {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+      cursor: not-allowed;
+
+      &:hover {
+        transform: none;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+      }
+    }
+
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
       transform: none;
       box-shadow: none;
+    }
+
+    .spinner-inline {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
     }
   }
 }
@@ -513,6 +778,7 @@
   .quizzes-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    padding: 0;
   }
 
   .category-tabs {
@@ -525,6 +791,98 @@
 
   .quiz-actions {
     flex-direction: column;
+    gap: 0.75rem;
+
+    .btn {
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  .quiz-card {
+    padding: 1.5rem;
+
+    .quiz-header h3 {
+      font-size: 1.2rem;
+    }
+
+    .quiz-badges {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+
+      .badge {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+      }
+    }
+  }
+
+  .current-category-header {
+    h2 {
+      font-size: 1.5rem;
+    }
+
+    .refresh-button {
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .quizzes-grid {
+    gap: 1rem;
+  }
+
+  .quiz-card {
+    padding: 1rem;
+
+    .quiz-header h3 {
+      font-size: 1.1rem;
+    }
+
+    .quiz-description p {
+      font-size: 0.85rem;
+    }
+
+    .quiz-actions {
+      gap: 0.5rem;
+
+      .btn {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.8rem;
+      }
+    }
+  }
+
+  .current-category-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+
+    h2 {
+      font-size: 1.3rem;
+      text-align: center;
+    }
+
+    .refresh-button {
+      align-self: center;
+      width: auto;
+    }
+  }
+
+  .no-quizzes .empty-state {
+    .empty-icon {
+      font-size: 3rem;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+    }
   }
 }
 

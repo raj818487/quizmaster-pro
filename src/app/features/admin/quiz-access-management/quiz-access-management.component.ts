@@ -245,6 +245,7 @@ export class QuizAccessManagementComponent implements OnInit {
 
     // Toggle assignment status
     const newIsAssigned = !assignment.is_assigned;
+    // Keep existing access permission when assigning/unassigning
     const newHasAccess = newIsAssigned ? assignment.has_access : false;
 
     try {
@@ -359,7 +360,7 @@ export class QuizAccessManagementComponent implements OnInit {
     const assignments = allQuizzes.map(quiz => ({
       quizId: quiz.id!,
       isAssigned: true,
-      hasAccess: false  // Assign but don't give access automatically
+      hasAccess: false  // Assignment does not automatically grant access
     }));
 
     try {

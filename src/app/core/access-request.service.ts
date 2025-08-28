@@ -66,9 +66,15 @@ export class AccessRequestService {
     request: AccessRequestCreate
   ): Promise<{ success: boolean; message: string }> {
     try {
+      console.log('Sending access request:', request);
+      console.log('API URL:', `${this.apiUrl}/access-requests`);
+      
       const response: any = await firstValueFrom(
         this.http.post(`${this.apiUrl}/access-requests`, request)
       );
+      
+      console.log('Access request response:', response);
+      
       return {
         success: response.success || false,
         message:
@@ -79,6 +85,7 @@ export class AccessRequestService {
       };
     } catch (error) {
       console.error('Error creating access request:', error);
+      console.error('Error details:', error);
       return {
         success: false,
         message: 'Failed to create access request',

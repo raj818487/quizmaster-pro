@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuizService } from '../../core/quiz.service';
 import { AuthService } from '../../core/auth.service';
@@ -30,13 +30,15 @@ export class UserDashboardPage implements OnInit {
   activeCategory = 'assigned';
   loading = false;
   error = '';
+  requestingAccess = new Set<number>(); // Track which quizzes have pending requests
 
   constructor(
     private quizService: QuizService,
     private authService: AuthService,
     private accessRequestService: AccessRequestService,
     private router: Router,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -80,12 +82,16 @@ export class UserDashboardPage implements OnInit {
         
         console.log(`Quiz ${quiz.id} (${quiz.title}): hasAccess=${hasAccess}, isAssigned=${isAssigned}`);
         
+        // ONLY access permission allows starting quiz, not assignment alone
+        const canStart = hasAccess;
+        
         return {
           ...quiz,
           assignment_status: isAssigned ? 'assigned' as const : 'not_assigned' as const,
           access_status: hasAccess ? 'has_access' as const : 'no_access' as const,
-          can_start: hasAccess,
-          display_message: hasAccess ? undefined : 'Access needed - contact admin'
+          can_start: canStart,
+          display_message: canStart ? undefined : 
+            (isAssigned ? 'Assigned but no access - contact admin for access' : 'Access needed - contact admin')
         };
       });
 
@@ -178,10 +184,16 @@ export class UserDashboardPage implements OnInit {
 
   async startQuiz(quiz: QuizWithStatus) {
     if (!quiz.can_start) {
-      if (quiz.access_status === 'no_access' && quiz.assignment_status === 'not_assigned') {
-        // This is a private quiz - offer to request access
-        await this.requestAccess(quiz);
-        return;
+      if (quiz.access_status === 'no_access') {
+        if (quiz.assignment_status === 'assigned') {
+          // Quiz is assigned but user doesn't have access
+          this.toastService.warning('This quiz is assigned to you but you need access permission. Please contact an admin.');
+          return;
+        } else {
+          // This is a private quiz - offer to request access
+          await this.requestAccess(quiz);
+          return;
+        }
       } else {
         this.toastService.warning(quiz.display_message || 'You cannot start this quiz at the moment.');
         return;
@@ -196,6 +208,16 @@ export class UserDashboardPage implements OnInit {
   async requestAccess(quiz: QuizWithStatus) {
     if (!this.currentUser?.id || !quiz.id) return;
 
+    // Check if already requesting access
+    if (this.requestingAccess.has(quiz.id)) {
+      this.toastService.warning('Access request already in progress for this quiz.');
+      return;
+    }
+
+    // Add to requesting set and trigger change detection
+    this.requestingAccess.add(quiz.id);
+    this.cdr.detectChanges();
+
     try {
       const result = await this.accessRequestService.createAccessRequest({
         userId: this.currentUser.id,
@@ -205,7 +227,18 @@ export class UserDashboardPage implements OnInit {
 
       if (result.success) {
         this.toastService.success('Access request submitted successfully! You will be notified when an admin responds.');
-        // Reload quizzes to update status
+        
+        // Update the quiz status immediately for better UX
+        const quizIndex = this.privateQuizzes.findIndex(q => q.id === quiz.id);
+        if (quizIndex !== -1) {
+          this.privateQuizzes[quizIndex] = {
+            ...this.privateQuizzes[quizIndex],
+            access_status: 'pending_request',
+            display_message: 'Access request pending'
+          };
+        }
+        
+        // Reload quizzes to get the latest status from server
         await this.loadQuizzes();
       } else {
         this.toastService.error('Failed to submit access request: ' + result.message);
@@ -213,7 +246,38 @@ export class UserDashboardPage implements OnInit {
     } catch (error) {
       console.error('Error requesting access:', error);
       this.toastService.error('Failed to submit access request. Please try again.');
+    } finally {
+      // Remove from requesting set and trigger change detection
+      this.requestingAccess.delete(quiz.id);
+      this.cdr.detectChanges();
     }
+  }
+
+  // Helper method to check if request is pending for a quiz
+  isRequestingAccess(quizId: number): boolean {
+    return this.requestingAccess.has(quizId);
+  }
+
+  // Helper method to get button text
+  getRequestButtonText(quiz: QuizWithStatus): string {
+    if (!quiz.id) return 'Request Access';
+    
+    if (this.isRequestingAccess(quiz.id)) {
+      return 'Requesting...';
+    }
+    
+    if (quiz.access_status === 'pending_request') {
+      return 'Request Pending';
+    }
+    
+    return 'Request Access';
+  }
+
+  // Helper method to check if button should be disabled
+  isRequestButtonDisabled(quiz: QuizWithStatus): boolean {
+    if (!quiz.id) return true;
+    
+    return this.isRequestingAccess(quiz.id) || quiz.access_status === 'pending_request';
   }
 
   viewQuizDetails(quiz: QuizWithStatus) {

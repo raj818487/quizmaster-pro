@@ -113,7 +113,7 @@ function initializeDatabase() {
         quiz_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
         is_assigned INTEGER DEFAULT 1,
-        has_access INTEGER DEFAULT 1,
+        has_access INTEGER DEFAULT 0,
         assigned_by INTEGER NOT NULL,
         assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
@@ -125,6 +125,7 @@ function initializeDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         quiz_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
+        message TEXT,
         status TEXT DEFAULT 'pending',
         requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         resolved_at DATETIME,
@@ -134,6 +135,14 @@ function initializeDatabase() {
         FOREIGN KEY (resolved_by) REFERENCES users(id)
       );
     `);
+
+  // Add message column to access_requests table if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE access_requests ADD COLUMN message TEXT;`);
+  } catch (error) {
+    // Column might already exist, ignore error
+    console.log("Message column may already exist in access_requests table");
+  }
 
   const admin = db
     .prepare("SELECT * FROM users WHERE username = ?")
@@ -610,9 +619,10 @@ app.get("/api/users/:id/assigned-quizzes", (req, res) => {
     const quizzes = db
       .prepare(
         `
-      SELECT q.* FROM quizzes q
+      SELECT q.*, qa.is_assigned, qa.has_access 
+      FROM quizzes q
       JOIN quiz_assignments qa ON q.id = qa.quiz_id
-      WHERE qa.user_id = ? AND qa.is_assigned = 1 AND qa.has_access = 1
+      WHERE qa.user_id = ? AND qa.is_assigned = 1
     `
       )
       .all(userId);
@@ -1166,7 +1176,7 @@ app.post("/api/quiz-assignments", (req, res) => {
   try {
     // Convert boolean values to integers for SQLite
     const is_assigned = isAssigned !== undefined ? (isAssigned ? 1 : 0) : 1;
-    const has_access = hasAccess !== undefined ? (hasAccess ? 1 : 0) : 1;
+    const has_access = hasAccess !== undefined ? (hasAccess ? 1 : 0) : 0; // Default to no access
 
     // Check if assignment already exists
     const existingAssignment = db
@@ -1380,9 +1390,13 @@ app.delete("/api/quiz-assignments/:id", (req, res) => {
 
 // Access request endpoints
 app.post("/api/access-requests", (req, res) => {
+  console.log("Access request POST received:", req.body);
   const { quizId: quiz_id, userId: user_id, message } = req.body || {};
 
+  console.log("Parsed values:", { quiz_id, user_id, message });
+
   if (!quiz_id || !user_id) {
+    console.log("Missing required fields:", { quiz_id, user_id });
     return res
       .status(400)
       .json({ success: false, message: "Quiz ID and User ID are required" });
@@ -1390,6 +1404,7 @@ app.post("/api/access-requests", (req, res) => {
 
   try {
     // Check if there's already a pending request
+    console.log("Checking for existing request...");
     const existingRequest = db
       .prepare(
         `
@@ -1399,18 +1414,23 @@ app.post("/api/access-requests", (req, res) => {
       )
       .get(quiz_id, user_id);
 
+    console.log("Existing request check result:", existingRequest);
+
     if (existingRequest) {
+      console.log("Found existing pending request");
       return res.status(409).json({
         success: false,
         message: "You already have a pending request for this quiz",
       });
     }
 
+    console.log("Preparing insert statement...");
     const insertRequest = db.prepare(`
       INSERT INTO access_requests (quiz_id, user_id, message, requested_at, status)
       VALUES (?, ?, ?, ?, 'pending')
     `);
 
+    console.log("Executing insert with values:", [quiz_id, user_id, message || null, new Date().toISOString()]);
     const result = insertRequest.run(
       quiz_id,
       user_id,
@@ -1418,12 +1438,14 @@ app.post("/api/access-requests", (req, res) => {
       new Date().toISOString()
     );
 
+    console.log("Insert result:", result);
     res.status(201).json({
       success: true,
       requestId: result.lastInsertRowid,
     });
   } catch (error) {
-    console.error("Access request error:", error);
+    console.error("Access request error (detailed):", error);
+    console.error("Error stack:", error.stack);
     res
       .status(500)
       .json({ success: false, message: "Failed to create access request" });
@@ -1587,6 +1609,117 @@ app.put("/api/access-requests/:id", (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Failed to update access request" });
+  }
+});
+
+// Database Management Endpoints
+// Get all tables with row counts
+app.get("/api/database/tables", (req, res) => {
+  try {
+    // Get all table names
+    const tables = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
+      .all();
+    
+    // Get row count for each table
+    const tablesWithCounts = tables.map(table => {
+      try {
+        const countResult = db.prepare(`SELECT COUNT(*) as count FROM ${table.name}`).get();
+        const schemaResult = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`).get(table.name);
+        
+        return {
+          name: table.name,
+          rowCount: countResult.count,
+          sql: schemaResult.sql
+        };
+      } catch (error) {
+        console.error(`Error getting info for table ${table.name}:`, error);
+        return {
+          name: table.name,
+          rowCount: 0,
+          sql: 'Error retrieving schema'
+        };
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      tables: tablesWithCounts 
+    });
+  } catch (error) {
+    console.error("Error getting database tables:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to get database tables" 
+    });
+  }
+});
+
+// Execute SQL query
+app.post("/api/database/query", (req, res) => {
+  const { query } = req.body;
+  
+  if (!query || !query.trim()) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "Query is required" 
+    });
+  }
+
+  try {
+    const trimmedQuery = query.trim();
+    console.log("Executing query:", trimmedQuery);
+    
+    // Determine if this is a SELECT query or a modification query
+    const isSelectQuery = trimmedQuery.toLowerCase().startsWith('select') || 
+                         trimmedQuery.toLowerCase().startsWith('pragma') ||
+                         trimmedQuery.toLowerCase().startsWith('explain');
+    
+    if (isSelectQuery) {
+      // For SELECT queries, return the data
+      const stmt = db.prepare(trimmedQuery);
+      const result = stmt.all();
+      
+      // Get column names
+      let columns = [];
+      if (result.length > 0) {
+        columns = Object.keys(result[0]);
+      } else {
+        // Try to get columns from the statement info (limited support)
+        try {
+          const mockResult = stmt.get();
+          if (mockResult) columns = Object.keys(mockResult);
+        } catch (e) {
+          // If no data, we can't determine columns easily
+        }
+      }
+      
+      res.json({
+        success: true,
+        data: result,
+        columns: columns,
+        rowCount: result.length,
+        message: `Query returned ${result.length} rows`
+      });
+    } else {
+      // For modification queries (INSERT, UPDATE, DELETE, CREATE, etc.)
+      const stmt = db.prepare(trimmedQuery);
+      const result = stmt.run();
+      
+      res.json({
+        success: true,
+        rowCount: result.changes,
+        lastInsertRowid: result.lastInsertRowid,
+        message: `Query executed successfully. ${result.changes} rows affected.`
+      });
+    }
+  } catch (error) {
+    console.error("SQL Query error:", error);
+    res.json({
+      success: false,
+      error: error.message,
+      message: "Query execution failed"
+    });
   }
 });
 
