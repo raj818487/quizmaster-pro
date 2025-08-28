@@ -1,0 +1,12 @@
+# Railway Frontend Deployment Configuration
+[build]
+  builder = "nixpacks"
+  
+[build.env]
+  NODE_VERSION = "20.19.0"
+
+[deploy]
+  startCommand = "npm run start:prod"
+  
+[env]
+  NODE_ENV = "production"
