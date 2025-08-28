@@ -1,0 +1,27 @@
+# Railway Backend Deployment Configuration
+
+# Build command
+buildCommand = "npm install"
+
+# Start command  
+startCommand = "npm start"
+
+# Environment variables (set these in Railway dashboard)
+# NODE_ENV=production
+# DATABASE_URL=postgresql://postgres:WDjzRpZFbTSYsetmsemUYxCJbGKoWUzM@gondola.proxy.rlwy.net:45394/railway
+# JWT_SECRET=railway-prod-jwt-secret-key-strong-32-chars-minimum-2025
+# PORT=4000
+# HOST=0.0.0.0
+# CORS_ORIGIN=https://your-frontend-domain.com
+
+# Health check endpoint
+healthCheckPath = "/api/health"
+
+# Port configuration
+port = 4000
+
+# Service configuration
+[services.backend]
+  buildCommand = "npm install"
+  startCommand = "npm start"
+  port = 4000

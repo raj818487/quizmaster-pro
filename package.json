@@ -1,5 +1,5 @@
 {
-  "name": "QuizMaster Pro",
+  "name": "quizmaster-pro",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -14,7 +14,25 @@
     "test": "ng test",
     "install:backend": "cd backend && npm install",
     "migrate": "cd backend && npm run migrate",
-    "cleanup": "node cleanup.js"
+    
+    "backend:dev": "cd backend && npm run dev",
+    "backend:prod": "cd backend && npm run start",
+    "backend:build": "cd backend && npm run build",
+    "frontend:dev": "ng serve --configuration development",
+    "frontend:prod": "ng build --configuration production",
+    "frontend:build": "ng build --configuration production",
+    
+    "env:setup": "echo Setting up environment files... && echo Please copy .env.example to .env in backend folder",
+    "env:dev": "cd backend && cp .env.development .env",
+    "env:prod": "cd backend && cp .env.production .env",
+    
+    "deploy:build": "npm run frontend:build && npm run backend:build",
+    "deploy:start": "cd backend && npm start",
+    "deploy:full": "npm run install:backend && npm install && npm run deploy:build",
+    
+    "heroku-postbuild": "npm run frontend:build",
+    "railway:build": "npm run deploy:build",
+    "vercel:build": "npm run frontend:build"
   },
   "private": true,
   "dependencies": {

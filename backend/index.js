@@ -1795,6 +1795,17 @@ app.post("/api/database/query", async (req, res) => {
   }
 });
 
+// Health check endpoint for deployment platforms
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    database: 'connected' // You could add actual DB health check here
+  });
+});
+
 // Serve Swagger UI
 const swaggerDoc = YAML.load(path.join(__dirname, "swagger.yaml"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));

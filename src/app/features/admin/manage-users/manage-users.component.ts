@@ -24,7 +24,6 @@ interface NewUser {
     CommonModule,
     FormsModule,
     MatDialogModule,
-    ConfirmationDialogComponent,
   ],
   templateUrl: './manage-users.component.html',
   styleUrls: ['./manage-users.component.scss'],
