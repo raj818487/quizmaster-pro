@@ -1,28 +1,23 @@
-# Railway Backend Deployment Configuration
+# Railway Deployment Configuration for QuizMaster Pro Backend
 
 [build]
-  builder = "nixpacks"
+builder = "nixpacks"
 
 [build.env]
-  NODE_VERSION = "20.19.0"
+NODE_VERSION = "20.19.0"
 
 [deploy]
-  startCommand = "npm start"
-  
-[env]
-  NODE_ENV = "production"
-  PORT = "4000"
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
 
-# Environment variables (set these in Railway dashboard)
+[env]
+NODE_ENV = "production"
+PORT = "4000"
+HOST = "0.0.0.0"
+
+# Set these environment variables in Railway Dashboard:
 # DATABASE_URL=postgresql://postgres:WDjzRpZFbTSYsetmsemUYxCJbGKoWUzM@gondola.proxy.rlwy.net:45394/railway
 # JWT_SECRET=railway-prod-jwt-secret-key-strong-32-chars-minimum-2025
-# CORS_ORIGIN=https://your-frontend-domain.com
-
-# Health check endpoint
-healthCheckPath = "/api/health"
-
-# Service configuration
-[services.backend]
-  buildCommand = "npm install"
-  startCommand = "npm start"
-  port = 4000
+# CORS_ORIGIN=https://quizmaster-pro-lemon.vercel.app
