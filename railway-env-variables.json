@@ -1,0 +1,20 @@
+{
+  "NODE_ENV": "production",
+  "DB_HOST": "gondola.proxy.rlwy.net",
+  "DB_PORT": "45394",
+  "DB_NAME": "railway",
+  "DB_USER": "postgres",
+  "DB_PASSWORD": "WDjzRpZFbTSYsetmsemUYxCJbGKoWUzM",
+  "JWT_SECRET": "railway-prod-jwt-secret-key-strong-32-chars-minimum-2025",
+  "JWT_EXPIRES_IN": "2h",
+  "BCRYPT_ROUNDS": "12",
+  "PORT": "4000",
+  "HOST": "0.0.0.0",
+  "CORS_ORIGIN": "https://quizmaster-pro-lemon.vercel.app",
+  "API_PREFIX": "/api",
+  "API_VERSION": "v1",
+  "LOG_LEVEL": "info",
+  "LOG_FILE": "logs/production.log",
+  "RATE_LIMIT_WINDOW_MS": "900000",
+  "RATE_LIMIT_MAX_REQUESTS": "100"
+}
