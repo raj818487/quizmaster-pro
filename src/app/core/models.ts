@@ -32,6 +32,7 @@ export interface Question {
   id?: number;
   quiz_id: number;
   text: string;
+  question?: string; // API response field for backward compatibility
   type: QuestionType;
   options?: string[] | string;
   correct_answer: string;

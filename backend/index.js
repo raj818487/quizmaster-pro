@@ -1,9 +1,18 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const Database = require("better-sqlite3");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
+// Import PostgreSQL database service
+const { DatabaseService, pool } = require("./database");
+const db = DatabaseService;
+
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -12,219 +21,140 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create and use the database file in the backend folder
-const dbPath = path.join(__dirname, "quizmaster.db");
-console.log(`Using database at: ${dbPath}`);
-const db = new Database(dbPath);
+// Initialize PostgreSQL database
+async function initializePostgreSQL() {
+  try {
+    // Test database connection
+    await pool.query("SELECT NOW()");
+    console.log("✅ PostgreSQL connection established");
 
-// Database helper functions
-const getUsers = () => db.prepare("SELECT * FROM users").all();
-const getUserById = (id) => {
-  const user = db
-    .prepare(
-      "SELECT id, username, role, status, last_activity FROM users WHERE id = ?"
-    )
-    .get(id);
-  console.log("Retrieved user by ID:", id, user);
-  return user;
-};
-const getUserByUsername = (username) =>
-  db
-    .prepare(
-      "SELECT id, username, password, role, status, last_activity FROM users WHERE username = ?"
-    )
-    .get(username);
-const getQuizzes = () => db.prepare("SELECT * FROM quizzes").all();
-const getQuizById = (id) =>
-  db.prepare("SELECT * FROM quizzes WHERE id = ?").get(id);
-const getQuestionsByQuizId = (quizId) =>
-  db.prepare("SELECT * FROM questions WHERE quiz_id = ?").all(quizId);
-
-// Initialize schema (same as unified-server.js)
-function initializeDatabase() {
-  db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT DEFAULT 'user',
-        status TEXT DEFAULT 'active',
-        last_activity TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS quizzes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        created_by INTEGER,
-        is_public INTEGER DEFAULT 1,
-        time_limit INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (created_by) REFERENCES users(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS questions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        quiz_id INTEGER NOT NULL,
-        text TEXT NOT NULL,
-        type TEXT DEFAULT 'multiple_choice',
-        correct_answer TEXT NOT NULL,
-        points INTEGER DEFAULT 1,
-        options TEXT,
-        FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS quiz_attempts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        quiz_id INTEGER NOT NULL,
-        score INTEGER DEFAULT 0,
-        total_questions INTEGER DEFAULT 0,
-        started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        completed_at DATETIME,
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS user_answers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        attempt_id INTEGER NOT NULL,
-        question_id INTEGER NOT NULL,
-        user_answer TEXT,
-        is_correct INTEGER DEFAULT 0,
-        FOREIGN KEY (attempt_id) REFERENCES quiz_attempts(id) ON DELETE CASCADE,
-        FOREIGN KEY (question_id) REFERENCES questions(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS quiz_permissions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        quiz_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        permission_type TEXT DEFAULT 'view',
-        granted_by INTEGER NOT NULL,
-        granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (granted_by) REFERENCES users(id)
-      );
-      
-      CREATE TABLE IF NOT EXISTS quiz_assignments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        quiz_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        is_assigned INTEGER DEFAULT 1,
-        has_access INTEGER DEFAULT 0,
-        assigned_by INTEGER NOT NULL,
-        assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (assigned_by) REFERENCES users(id)
-      );
-      
-      CREATE TABLE IF NOT EXISTS access_requests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        quiz_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        message TEXT,
-        status TEXT DEFAULT 'pending',
-        requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        resolved_at DATETIME,
-        resolved_by INTEGER,
-        FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (resolved_by) REFERENCES users(id)
-      );
+    // Check if tables exist, if not, run initialization
+    const result = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_name = 'users'
     `);
 
-  // Add message column to access_requests table if it doesn't exist
-  try {
-    db.exec(`ALTER TABLE access_requests ADD COLUMN message TEXT;`);
+    if (result.rows.length === 0) {
+      console.log("🚀 Running database initialization...");
+      const { initializeDatabase } = require("./init-postgres");
+      await initializeDatabase();
+    } else {
+      console.log("📊 Database already initialized");
+    }
   } catch (error) {
-    // Column might already exist, ignore error
-    console.log("Message column may already exist in access_requests table");
-  }
-
-  const admin = db
-    .prepare("SELECT * FROM users WHERE username = ?")
-    .get("admin");
-  if (!admin) {
-    db.prepare(
-      "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
-    ).run("admin", "admin123", "admin");
-    console.log("Default admin created: admin/admin123");
+    console.error("❌ Database initialization failed:", error.message);
+    console.log("🔄 Server will start without database connection");
+    console.log(
+      "💡 Please ensure PostgreSQL is running and configured correctly"
+    );
+    console.log("📖 See POSTGRESQL_SETUP.md for setup instructions");
   }
 }
 
-initializeDatabase();
+// Initialize database on startup (non-blocking)
+initializePostgreSQL();
 
 // Auth
-app.post("/api/auth/login", (req, res) => {
-  const { username, password } = req.body || {};
-  const user = getUserByUsername(username);
-
-  if (!user || user.password !== password) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Invalid credentials" });
-  }
-
-  // Check if the user is suspended
-  if (user.status === "suspended") {
-    return res
-      .status(403)
-      .json({ success: false, message: "Your account has been suspended" });
-  }
-
-  // Update last activity
-  db.prepare("UPDATE users SET last_activity = ? WHERE id = ?").run(
-    new Date().toISOString(),
-    user.id
-  );
-
-  // Get the updated user information
-  const updatedUser = getUserById(user.id);
-
-  return res.json({
-    success: true,
-    user: {
-      id: updatedUser.id,
-      username: updatedUser.username,
-      role: updatedUser.role,
-      status: updatedUser.status,
-      last_activity: updatedUser.last_activity,
-    },
-  });
-});
-
-app.post("/api/auth/register", (req, res) => {
-  const { username, password, role = "user" } = req.body || {};
-  if (!username || !password)
-    return res.status(400).json({ success: false, message: "Missing fields" });
-  const existing = getUserByUsername(username);
-  if (existing)
-    return res.status(409).json({ success: false, message: "User exists" });
-  const result = db
-    .prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
-    .run(username, password, role);
-  return res.status(201).json({
-    success: true,
-    user: { id: result.lastInsertRowid, username, role },
-  });
-});
-
-app.get("/api/users", (_req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   try {
-    const rows = db
-      .prepare("SELECT id, username, role, status, last_activity FROM users")
-      .all();
+    const { username, password } = req.body || {};
+    const user = await DatabaseService.getUserByUsername(username);
+
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
+    }
+
+    // Compare password with bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
+    }
+
+    // Check if the user is suspended
+    if (user.status === "suspended") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Your account has been suspended" });
+    }
+
+    // Update last activity
+    await DatabaseService.updateUserActivity(user.id);
+
+    // Get the updated user information
+    const updatedUser = await DatabaseService.getUserById(user.id);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        role: updatedUser.role,
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      success: true,
+      token: token,
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        last_activity: updatedUser.last_activity,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { username, password, role = "user" } = req.body || {};
+    if (!username || !password)
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing fields" });
+
+    const existing = await DatabaseService.getUserByUsername(username);
+    if (existing)
+      return res.status(409).json({ success: false, message: "User exists" });
+
+    const userId = await DatabaseService.createUser(username, password, role);
+    return res.status(201).json({
+      success: true,
+      user: { id: userId, username, role },
+    });
+  } catch (error) {
+    console.error("Register error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.get("/api/users", async (_req, res) => {
+  try {
+    const users = await DatabaseService.getAllUsers();
     // Add online status (simulated for demo)
-    const users = rows.map((user) => ({
+    const usersWithStatus = users.map((user) => ({
       ...user,
       isOnline: user.last_activity
         ? new Date(user.last_activity).getTime() > Date.now() - 5 * 60 * 1000 // Online if active in last 5 min
         : false,
     }));
-    return res.json(users);
+    return res.json(usersWithStatus);
   } catch (error) {
     console.error("Get users error:", error);
     return res
@@ -234,9 +164,54 @@ app.get("/api/users", (_req, res) => {
 });
 
 // Quiz endpoints
-app.get("/api/quizzes", (_req, res) => {
+// Authentication middleware
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      req.user = null;
+    } else {
+      req.user = user;
+    }
+    next();
+  });
+}
+
+app.get("/api/quizzes", authenticateToken, async (req, res) => {
   try {
-    const quizzes = getQuizzes();
+    let quizzes;
+
+    // If user is admin, show all quizzes
+    if (req.user && req.user.role === "admin") {
+      quizzes = await DatabaseService.getAllQuizzes();
+    }
+    // If user is logged in but not admin, show public quizzes + their own quizzes
+    else if (req.user) {
+      const publicQuizzes = await DatabaseService.getPublicQuizzes();
+      const userQuizzes = await pool.query(
+        "SELECT * FROM quizzes WHERE created_by = $1",
+        [req.user.id]
+      );
+
+      // Combine and remove duplicates
+      const allQuizzes = [...publicQuizzes, ...userQuizzes.rows];
+      const uniqueQuizzes = allQuizzes.filter(
+        (quiz, index, self) => index === self.findIndex((q) => q.id === quiz.id)
+      );
+      quizzes = uniqueQuizzes;
+    }
+    // If not logged in, show only public quizzes
+    else {
+      quizzes = await DatabaseService.getPublicQuizzes();
+    }
+
     res.json(quizzes);
   } catch (error) {
     console.error("Get quizzes error:", error);
@@ -246,11 +221,9 @@ app.get("/api/quizzes", (_req, res) => {
   }
 });
 
-app.get("/api/quizzes/public", (_req, res) => {
+app.get("/api/quizzes/public", async (_req, res) => {
   try {
-    const quizzes = db
-      .prepare("SELECT * FROM quizzes WHERE is_public = 1")
-      .all();
+    const quizzes = await DatabaseService.getPublicQuizzes();
     res.json(quizzes);
   } catch (error) {
     console.error("Get public quizzes error:", error);
@@ -260,10 +233,10 @@ app.get("/api/quizzes/public", (_req, res) => {
   }
 });
 
-app.get("/api/quizzes/:id", (req, res) => {
+app.get("/api/quizzes/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const quiz = getQuizById(id);
+    const quiz = await DatabaseService.getQuizById(id);
 
     if (!quiz) {
       return res
@@ -278,11 +251,33 @@ app.get("/api/quizzes/:id", (req, res) => {
   }
 });
 
-app.get("/api/quizzes/:id/questions", (req, res) => {
+app.get("/api/quizzes/:id/questions", async (req, res) => {
   try {
     const quizId = Number(req.params.id);
-    const questions = getQuestionsByQuizId(quizId);
-    res.json(questions);
+
+    // Validate quiz ID
+    if (!quizId || isNaN(quizId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid quiz ID",
+      });
+    }
+
+    const questions = await DatabaseService.getQuestionsByQuizId(quizId);
+
+    // Ensure questions have proper structure
+    const formattedQuestions = questions.map((question) => ({
+      id: question.id,
+      question: question.question,
+      options: Array.isArray(question.options)
+        ? question.options
+        : JSON.parse(question.options || "[]"),
+      correct_answer: question.correct_answer,
+      points: question.points || 1,
+      quiz_id: question.quiz_id,
+    }));
+
+    res.json(formattedQuestions);
   } catch (error) {
     console.error("Get questions error:", error);
     res
@@ -291,7 +286,7 @@ app.get("/api/quizzes/:id/questions", (req, res) => {
   }
 });
 
-app.post("/api/quizzes", (req, res) => {
+app.post("/api/quizzes", async (req, res) => {
   const {
     title,
     description,
@@ -308,43 +303,16 @@ app.post("/api/quizzes", (req, res) => {
   }
 
   try {
-    // Begin transaction
-    const insertQuiz = db.prepare(
-      "INSERT INTO quizzes (title, description, created_by, is_public, time_limit) VALUES (?, ?, ?, ?, ?)"
-    );
+    const quizId = await DatabaseService.createQuizWithQuestions({
+      title,
+      description: description || "",
+      created_by: created_by || null,
+      is_public: is_public ? 1 : 0,
+      time_limit: time_limit || 0,
+      questions,
+    });
 
-    const insertQuestion = db.prepare(
-      "INSERT INTO questions (quiz_id, text, type, correct_answer, options, points) VALUES (?, ?, ?, ?, ?, ?)"
-    );
-
-    const result = db.transaction(() => {
-      const quizResult = insertQuiz.run(
-        title,
-        description || "",
-        created_by || null,
-        is_public ? 1 : 0,
-        time_limit || 0
-      );
-
-      const quizId = quizResult.lastInsertRowid;
-
-      if (questions && Array.isArray(questions) && questions.length > 0) {
-        questions.forEach((q) => {
-          insertQuestion.run(
-            quizId,
-            q.text,
-            q.type || "multiple_choice",
-            q.correct_answer,
-            q.options ? JSON.stringify(q.options) : null,
-            q.points || 1
-          );
-        });
-      }
-
-      return quizId;
-    })();
-
-    const newQuiz = getQuizById(result);
+    const newQuiz = await DatabaseService.getQuizById(quizId);
     res.status(201).json({ success: true, quiz: newQuiz });
   } catch (error) {
     console.error("Create quiz error:", error);
@@ -352,12 +320,12 @@ app.post("/api/quizzes", (req, res) => {
   }
 });
 
-app.put("/api/quizzes/:id", (req, res) => {
+app.put("/api/quizzes/:id", async (req, res) => {
   const quizId = Number(req.params.id);
   const { title, description, is_public, time_limit, user_id } = req.body || {};
 
   try {
-    const quiz = getQuizById(quizId);
+    const quiz = await DatabaseService.getQuizById(quizId);
 
     if (!quiz) {
       return res
@@ -367,27 +335,20 @@ app.put("/api/quizzes/:id", (req, res) => {
 
     // Check if user has permission to edit quiz
     if (user_id && quiz.created_by !== user_id) {
-      const isAdmin = db
-        .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
-        .get(user_id);
-      if (!isAdmin) {
+      const user = await DatabaseService.getUserById(user_id);
+      if (!user || user.role !== "admin") {
         return res
           .status(403)
           .json({ success: false, message: "Unauthorized to edit this quiz" });
       }
     }
 
-    const updateQuiz = db.prepare(
-      "UPDATE quizzes SET title = ?, description = ?, is_public = ?, time_limit = ? WHERE id = ?"
-    );
-
-    updateQuiz.run(
-      title !== undefined ? title : quiz.title,
-      description !== undefined ? description : quiz.description,
-      is_public !== undefined ? (is_public ? 1 : 0) : quiz.is_public,
-      time_limit !== undefined ? time_limit : quiz.time_limit,
-      quizId
-    );
+    await DatabaseService.updateQuiz(quizId, {
+      title: title !== undefined ? title : quiz.title,
+      description: description !== undefined ? description : quiz.description,
+      is_public: is_public !== undefined ? (is_public ? 1 : 0) : quiz.is_public,
+      time_limit: time_limit !== undefined ? time_limit : quiz.time_limit,
+    });
 
     res.json({ success: true });
   } catch (error) {
@@ -396,12 +357,12 @@ app.put("/api/quizzes/:id", (req, res) => {
   }
 });
 
-app.delete("/api/quizzes/:id", (req, res) => {
+app.delete("/api/quizzes/:id", async (req, res) => {
   const quizId = Number(req.params.id);
   const userId = Number(req.query.user_id);
 
   try {
-    const quiz = getQuizById(quizId);
+    const quiz = await DatabaseService.getQuizById(quizId);
 
     if (!quiz) {
       return res
@@ -411,10 +372,8 @@ app.delete("/api/quizzes/:id", (req, res) => {
 
     // Check if user has permission to delete quiz
     if (userId && quiz.created_by !== userId) {
-      const isAdmin = db
-        .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
-        .get(userId);
-      if (!isAdmin) {
+      const user = await DatabaseService.getUserById(userId);
+      if (!user || user.role !== "admin") {
         return res.status(403).json({
           success: false,
           message: "Unauthorized to delete this quiz",
@@ -422,8 +381,7 @@ app.delete("/api/quizzes/:id", (req, res) => {
       }
     }
 
-    const deleteQuiz = db.prepare("DELETE FROM quizzes WHERE id = ?");
-    deleteQuiz.run(quizId);
+    await DatabaseService.deleteQuiz(quizId);
 
     res.json({ success: true });
   } catch (error) {
@@ -433,7 +391,7 @@ app.delete("/api/quizzes/:id", (req, res) => {
 });
 
 // Question endpoints
-app.post("/api/quizzes/:id/questions", (req, res) => {
+app.post("/api/quizzes/:id/questions", async (req, res) => {
   const quizId = Number(req.params.id);
   const {
     text,
@@ -452,7 +410,7 @@ app.post("/api/quizzes/:id/questions", (req, res) => {
   }
 
   try {
-    const quiz = getQuizById(quizId);
+    const quiz = await DatabaseService.getQuizById(quizId);
 
     if (!quiz) {
       return res
@@ -462,9 +420,11 @@ app.post("/api/quizzes/:id/questions", (req, res) => {
 
     // Check if user has permission to add question
     if (user_id && quiz.created_by !== user_id) {
-      const isAdmin = db
-        .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
-        .get(user_id);
+      const isAdminResult = await pool.query(
+        "SELECT role FROM users WHERE id = $1 AND role = 'admin'",
+        [user_id]
+      );
+      const isAdmin = isAdminResult.rows[0];
       if (!isAdmin) {
         return res.status(403).json({
           success: false,
@@ -473,23 +433,18 @@ app.post("/api/quizzes/:id/questions", (req, res) => {
       }
     }
 
-    const insertQuestion = db.prepare(
-      "INSERT INTO questions (quiz_id, text, type, correct_answer, options, points) VALUES (?, ?, ?, ?, ?, ?)"
+    const result = await pool.query(
+      "INSERT INTO questions (quiz_id, question, correct_answer, options, points) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [
+        quizId,
+        text,
+        correct_answer,
+        options ? JSON.stringify(options) : null,
+        points,
+      ]
     );
 
-    const result = insertQuestion.run(
-      quizId,
-      text,
-      type,
-      correct_answer,
-      options ? JSON.stringify(options) : null,
-      points
-    );
-
-    const questionId = result.lastInsertRowid;
-    const question = db
-      .prepare("SELECT * FROM questions WHERE id = ?")
-      .get(questionId);
+    const question = result.rows[0];
 
     res.status(201).json({ success: true, question });
   } catch (error) {
@@ -498,15 +453,15 @@ app.post("/api/quizzes/:id/questions", (req, res) => {
   }
 });
 
-app.put("/api/questions/:id", (req, res) => {
+app.put("/api/questions/:id", async (req, res) => {
   const questionId = Number(req.params.id);
   const { text, type, correct_answer, options, points, user_id } =
     req.body || {};
 
   try {
-    const question = db
-      .prepare("SELECT * FROM questions WHERE id = ?")
-      .get(questionId);
+    const question = (
+      await pool.query("SELECT * FROM questions WHERE id = $1", [questionId])
+    ).rows[0];
 
     if (!question) {
       return res
@@ -515,12 +470,15 @@ app.put("/api/questions/:id", (req, res) => {
     }
 
     if (user_id) {
-      const quiz = getQuizById(question.quiz_id);
+      const quiz = await DatabaseService.getQuizById(question.quiz_id);
 
       if (quiz && quiz.created_by !== user_id) {
-        const isAdmin = db
-          .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
-          .get(user_id);
+        const isAdmin = (
+          await pool.query(
+            "SELECT role FROM users WHERE id = $1 AND role = 'admin'",
+            [user_id]
+          )
+        ).rows[0];
         if (!isAdmin) {
           return res.status(403).json({
             success: false,
@@ -530,17 +488,15 @@ app.put("/api/questions/:id", (req, res) => {
       }
     }
 
-    const updateQuestion = db.prepare(
-      "UPDATE questions SET text = ?, type = ?, correct_answer = ?, options = ?, points = ? WHERE id = ?"
-    );
-
-    updateQuestion.run(
-      text !== undefined ? text : question.text,
-      type !== undefined ? type : question.type,
-      correct_answer !== undefined ? correct_answer : question.correct_answer,
-      options !== undefined ? JSON.stringify(options) : question.options,
-      points !== undefined ? points : question.points,
-      questionId
+    await pool.query(
+      "UPDATE questions SET question = $1, correct_answer = $2, options = $3, points = $4 WHERE id = $5",
+      [
+        text !== undefined ? text : question.question,
+        correct_answer !== undefined ? correct_answer : question.correct_answer,
+        options !== undefined ? JSON.stringify(options) : question.options,
+        points !== undefined ? points : question.points,
+        questionId,
+      ]
     );
 
     res.json({ success: true });
@@ -552,14 +508,14 @@ app.put("/api/questions/:id", (req, res) => {
   }
 });
 
-app.delete("/api/questions/:id", (req, res) => {
+app.delete("/api/questions/:id", async (req, res) => {
   const questionId = Number(req.params.id);
   const userId = Number(req.query.user_id);
 
   try {
-    const question = db
-      .prepare("SELECT * FROM questions WHERE id = ?")
-      .get(questionId);
+    const question = (
+      await pool.query("SELECT * FROM questions WHERE id = $1", [questionId])
+    ).rows[0];
 
     if (!question) {
       return res
@@ -568,12 +524,15 @@ app.delete("/api/questions/:id", (req, res) => {
     }
 
     if (userId) {
-      const quiz = getQuizById(question.quiz_id);
+      const quiz = await DatabaseService.getQuizById(question.quiz_id);
 
       if (quiz && quiz.created_by !== userId) {
-        const isAdmin = db
-          .prepare("SELECT role FROM users WHERE id = ? AND role = 'admin'")
-          .get(userId);
+        const isAdmin = (
+          await pool.query(
+            "SELECT role FROM users WHERE id = $1 AND role = 'admin'",
+            [userId]
+          )
+        ).rows[0];
         if (!isAdmin) {
           return res.status(403).json({
             success: false,
@@ -583,8 +542,7 @@ app.delete("/api/questions/:id", (req, res) => {
       }
     }
 
-    const deleteQuestion = db.prepare("DELETE FROM questions WHERE id = ?");
-    deleteQuestion.run(questionId);
+    await pool.query("DELETE FROM questions WHERE id = $1", [questionId]);
 
     res.json({ success: true });
   } catch (error) {
@@ -596,13 +554,31 @@ app.delete("/api/questions/:id", (req, res) => {
 });
 
 // User-specific endpoints
-app.get("/api/users/:id/quizzes", (req, res) => {
+app.get("/api/users/:id/quizzes", authenticateToken, async (req, res) => {
   const userId = Number(req.params.id);
 
   try {
-    const quizzes = db
-      .prepare("SELECT * FROM quizzes WHERE created_by = ?")
-      .all(userId);
+    let quizzes;
+
+    // If requesting user is admin, show all quizzes created by the specified user
+    // If requesting user is the same as the specified user, show their quizzes
+    // Otherwise, show only public quizzes created by the specified user
+    if (req.user && (req.user.role === "admin" || req.user.id === userId)) {
+      quizzes = (
+        await pool.query(
+          "SELECT * FROM quizzes WHERE created_by = $1 ORDER BY created_at DESC",
+          [userId]
+        )
+      ).rows;
+    } else {
+      quizzes = (
+        await pool.query(
+          "SELECT * FROM quizzes WHERE created_by = $1 AND is_public = true ORDER BY created_at DESC",
+          [userId]
+        )
+      ).rows;
+    }
+
     res.json(quizzes);
   } catch (error) {
     console.error("Get user quizzes error:", error);
@@ -612,20 +588,21 @@ app.get("/api/users/:id/quizzes", (req, res) => {
   }
 });
 
-app.get("/api/users/:id/assigned-quizzes", (req, res) => {
+app.get("/api/users/:id/assigned-quizzes", async (req, res) => {
   const userId = Number(req.params.id);
 
   try {
-    const quizzes = db
-      .prepare(
+    const quizzes = (
+      await pool.query(
         `
-      SELECT q.*, qa.is_assigned, qa.has_access 
+      SELECT q.*, qa.assigned_at 
       FROM quizzes q
       JOIN quiz_assignments qa ON q.id = qa.quiz_id
-      WHERE qa.user_id = ? AND qa.is_assigned = 1
-    `
+      WHERE qa.user_id = $1
+    `,
+        [userId]
       )
-      .all(userId);
+    ).rows;
 
     res.json({ success: true, quizzes });
   } catch (error) {
@@ -637,12 +614,12 @@ app.get("/api/users/:id/assigned-quizzes", (req, res) => {
 });
 
 // Get user activity endpoint
-app.get("/api/users/:id/activity", (req, res) => {
+app.get("/api/users/:id/activity", async (req, res) => {
   const userId = Number(req.params.id);
 
   try {
     // Get basic user info
-    const user = getUserById(userId);
+    const user = await DatabaseService.getUserById(userId);
     if (!user) {
       return res
         .status(404)
@@ -650,32 +627,34 @@ app.get("/api/users/:id/activity", (req, res) => {
     }
 
     // Get quiz attempts
-    const attempts = db
-      .prepare(
+    const attempts = (
+      await pool.query(
         `
       SELECT qa.*, q.title as quiz_title 
       FROM quiz_attempts qa 
       JOIN quizzes q ON qa.quiz_id = q.id
-      WHERE qa.user_id = ?
+      WHERE qa.user_id = $1
       ORDER BY qa.started_at DESC
       LIMIT 10
-    `
+    `,
+        [userId]
       )
-      .all(userId);
+    ).rows;
 
     // Get access requests
-    const accessRequests = db
-      .prepare(
+    const accessRequests = (
+      await pool.query(
         `
       SELECT ar.*, q.title as quiz_title
       FROM access_requests ar
       JOIN quizzes q ON ar.quiz_id = q.id
-      WHERE ar.user_id = ?
+      WHERE ar.user_id = $1
       ORDER BY ar.requested_at DESC
       LIMIT 10
-    `
+    `,
+        [userId]
       )
-      .all(userId);
+    ).rows;
 
     res.json({
       success: true,
@@ -702,13 +681,13 @@ app.get("/api/users/:id/activity", (req, res) => {
   }
 });
 
-app.put("/api/users/:id", (req, res) => {
+app.put("/api/users/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { username, password, role, status } = req.body || {};
 
   try {
     console.log("Updating user:", id, "with data:", req.body);
-    const user = getUserById(id);
+    const user = await DatabaseService.getUserById(id);
     if (!user)
       return res
         .status(404)
@@ -716,9 +695,9 @@ app.put("/api/users/:id", (req, res) => {
 
     // For updates that include username, check for duplicates
     if (username && username !== user.username) {
-      const existingUser = db
-        .prepare("SELECT id FROM users WHERE username = ?")
-        .get(username);
+      const existingUser = (
+        await pool.query("SELECT id FROM users WHERE username = $1", [username])
+      ).rows[0];
       if (existingUser) {
         return res
           .status(409)
@@ -731,30 +710,33 @@ app.put("/api/users/:id", (req, res) => {
     // Build the update SQL dynamically based on provided fields
     let updateFields = [];
     let params = [];
+    let paramIndex = 1;
 
     if (username) {
-      updateFields.push("username = ?");
+      updateFields.push(`username = $${paramIndex++}`);
       params.push(username);
     }
 
     if (password) {
-      updateFields.push("password = ?");
-      params.push(password);
+      // Hash the password before storing
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateFields.push(`password = $${paramIndex++}`);
+      params.push(hashedPassword);
     }
 
     if (role) {
-      updateFields.push("role = ?");
+      updateFields.push(`role = $${paramIndex++}`);
       params.push(role);
     }
 
     if (status) {
-      updateFields.push("status = ?");
+      updateFields.push(`status = $${paramIndex++}`);
       params.push(status);
     }
 
     // Always update last_activity
-    updateFields.push("last_activity = ?");
-    params.push(new Date().toISOString());
+    updateFields.push(`last_activity = $${paramIndex++}`);
+    params.push(new Date());
 
     // Add the user ID at the end of params array
     params.push(id);
@@ -762,14 +744,14 @@ app.put("/api/users/:id", (req, res) => {
     if (updateFields.length > 0) {
       const updateQuery = `UPDATE users SET ${updateFields.join(
         ", "
-      )} WHERE id = ?`;
+      )} WHERE id = $${paramIndex}`;
       console.log("Running update query:", updateQuery, "with params:", params);
 
-      const result = db.prepare(updateQuery).run(...params);
+      const result = await pool.query(updateQuery, params);
       console.log("Update result:", result);
 
       // Get the updated user
-      const updatedUser = getUserById(id);
+      const updatedUser = await DatabaseService.getUserById(id);
       console.log("Updated user:", updatedUser);
 
       return res.json({ success: true, user: updatedUser });
@@ -790,17 +772,17 @@ app.put("/api/users/:id", (req, res) => {
   }
 });
 
-app.delete("/api/users/:id", (req, res) => {
+app.delete("/api/users/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const user = getUserById(id);
+  const user = await DatabaseService.getUserById(id);
   if (!user)
     return res.status(404).json({ success: false, message: "User not found" });
-  db.prepare("DELETE FROM users WHERE id = ?").run(id);
+  await pool.query("DELETE FROM users WHERE id = $1", [id]);
   return res.json({ success: true });
 });
 
 // Quiz attempt endpoints
-app.post("/api/attempts", (req, res) => {
+app.post("/api/attempts", async (req, res) => {
   const { user_id, quiz_id } = req.body || {};
 
   if (!user_id || !quiz_id) {
@@ -810,17 +792,15 @@ app.post("/api/attempts", (req, res) => {
   }
 
   try {
-    const insertAttempt = db.prepare(`
+    const result = await pool.query(
+      `
       INSERT INTO quiz_attempts (user_id, quiz_id, started_at) 
-      VALUES (?, ?, ?)
-    `);
-    const result = insertAttempt.run(
-      user_id,
-      quiz_id,
-      new Date().toISOString()
+      VALUES ($1, $2, $3) RETURNING id
+    `,
+      [user_id, quiz_id, new Date()]
     );
 
-    res.status(201).json({ success: true, attemptId: result.lastInsertRowid });
+    res.status(201).json({ success: true, attemptId: result.rows[0].id });
   } catch (error) {
     console.error("Create attempt error:", error);
     res
@@ -829,7 +809,7 @@ app.post("/api/attempts", (req, res) => {
   }
 });
 
-app.post("/api/attempts/:id/answers", (req, res) => {
+app.post("/api/attempts/:id/answers", async (req, res) => {
   const attemptId = Number(req.params.id);
   const { question_id, user_answer } = req.body || {};
 
@@ -840,9 +820,9 @@ app.post("/api/attempts/:id/answers", (req, res) => {
   }
 
   try {
-    const question = db
-      .prepare("SELECT * FROM questions WHERE id = ?")
-      .get(question_id);
+    const question = (
+      await pool.query("SELECT * FROM questions WHERE id = $1", [question_id])
+    ).rows[0];
 
     if (!question) {
       return res
@@ -854,11 +834,23 @@ app.post("/api/attempts/:id/answers", (req, res) => {
       String(user_answer).trim().toLowerCase() ===
       String(question.correct_answer).trim().toLowerCase();
 
-    const insertAnswer = db.prepare(`
-      INSERT INTO user_answers (attempt_id, question_id, user_answer, is_correct) 
-      VALUES (?, ?, ?, ?)
-    `);
-    insertAnswer.run(attemptId, question_id, user_answer, is_correct ? 1 : 0);
+    // Get current attempt to update answers
+    const attempt = (
+      await pool.query("SELECT answers FROM quiz_attempts WHERE id = $1", [
+        attemptId,
+      ])
+    ).rows[0];
+    let answers = attempt.answers || {};
+    answers[question_id] = {
+      user_answer: user_answer,
+      is_correct: is_correct,
+    };
+
+    // Update the attempt with the new answer
+    await pool.query("UPDATE quiz_attempts SET answers = $1 WHERE id = $2", [
+      JSON.stringify(answers),
+      attemptId,
+    ]);
 
     res.status(201).json({ success: true, is_correct });
   } catch (error) {
@@ -869,13 +861,13 @@ app.post("/api/attempts/:id/answers", (req, res) => {
   }
 });
 
-app.post("/api/attempts/:id/complete", (req, res) => {
+app.post("/api/attempts/:id/complete", async (req, res) => {
   const attemptId = Number(req.params.id);
 
   try {
-    const attempt = db
-      .prepare("SELECT * FROM quiz_attempts WHERE id = ?")
-      .get(attemptId);
+    const attempt = (
+      await pool.query("SELECT * FROM quiz_attempts WHERE id = $1", [attemptId])
+    ).rows[0];
 
     if (!attempt) {
       return res
@@ -883,32 +875,30 @@ app.post("/api/attempts/:id/complete", (req, res) => {
         .json({ success: false, message: "Attempt not found" });
     }
 
-    const answers = db
-      .prepare("SELECT * FROM user_answers WHERE attempt_id = ?")
-      .all(attemptId);
-    const correctCount = answers.filter((a) => a.is_correct === 1).length;
-    const totalQuestions = answers.length;
+    // Get answers from the attempt
+    const answers = attempt.answers || {};
+    const answerValues = Object.values(answers);
+    const correctCount = answerValues.filter(
+      (a) => a.is_correct === true
+    ).length;
+    const totalQuestions = answerValues.length;
     const percentage = totalQuestions
       ? (correctCount / totalQuestions) * 100
       : 0;
     const passed = percentage >= 60;
 
-    const updateAttempt = db.prepare(`
+    await pool.query(
+      `
       UPDATE quiz_attempts 
-      SET score = ?, total_questions = ?, completed_at = ?
-      WHERE id = ?
-    `);
-
-    updateAttempt.run(
-      correctCount,
-      totalQuestions,
-      new Date().toISOString(),
-      attemptId
+      SET score = $1, total_questions = $2, completed_at = $3, status = 'completed'
+      WHERE id = $4
+    `,
+      [correctCount, totalQuestions, new Date(), attemptId]
     );
 
-    const updatedAttempt = db
-      .prepare("SELECT * FROM quiz_attempts WHERE id = ?")
-      .get(attemptId);
+    const updatedAttempt = (
+      await pool.query("SELECT * FROM quiz_attempts WHERE id = $1", [attemptId])
+    ).rows[0];
 
     res.json({
       success: true,
@@ -927,21 +917,22 @@ app.post("/api/attempts/:id/complete", (req, res) => {
   }
 });
 
-app.get("/api/users/:id/attempts", (req, res) => {
+app.get("/api/users/:id/attempts", async (req, res) => {
   const userId = Number(req.params.id);
 
   try {
-    const attempts = db
-      .prepare(
+    const attempts = (
+      await pool.query(
         `
       SELECT qa.*, q.title as quiz_title 
       FROM quiz_attempts qa
       JOIN quizzes q ON qa.quiz_id = q.id
-      WHERE qa.user_id = ?
+      WHERE qa.user_id = $1
       ORDER BY qa.started_at DESC
-    `
+    `,
+        [userId]
       )
-      .all(userId);
+    ).rows;
 
     res.json({ success: true, attempts });
   } catch (error) {
@@ -953,42 +944,47 @@ app.get("/api/users/:id/attempts", (req, res) => {
 });
 
 // Enhanced stats endpoint for dashboard
-app.get("/api/stats", (_req, res) => {
+app.get("/api/stats", async (_req, res) => {
   try {
     // Basic counts
-    const totalQuizzes = db
-      .prepare("SELECT COUNT(*) as count FROM quizzes")
-      .get().count;
+    const totalQuizzes = (
+      await pool.query("SELECT COUNT(*) as count FROM quizzes", [])
+    ).rows[0].count;
 
-    const totalUsers = db
-      .prepare("SELECT COUNT(*) as count FROM users")
-      .get().count;
+    const totalUsers = (
+      await pool.query("SELECT COUNT(*) as count FROM users", [])
+    ).rows[0].count;
 
-    const activeUsers = db
-      .prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'")
-      .get().count;
-
-    const totalAttempts = db
-      .prepare("SELECT COUNT(*) as count FROM quiz_attempts")
-      .get().count;
-
-    const completedAttempts = db
-      .prepare(
-        "SELECT COUNT(*) as count FROM quiz_attempts WHERE completed_at IS NOT NULL"
+    const activeUsers = (
+      await pool.query(
+        "SELECT COUNT(*) as count FROM users WHERE status = 'active'",
+        []
       )
-      .get().count;
+    ).rows[0].count;
+
+    const totalAttempts = (
+      await pool.query("SELECT COUNT(*) as count FROM quiz_attempts", [])
+    ).rows[0].count;
+
+    const completedAttempts = (
+      await pool.query(
+        "SELECT COUNT(*) as count FROM quiz_attempts WHERE completed_at IS NOT NULL",
+        []
+      )
+    ).rows[0].count;
 
     // Calculate success rate (percentage of completed attempts with passing scores)
-    const passingAttempts = db
-      .prepare(
+    const passingAttempts = (
+      await pool.query(
         `
         SELECT COUNT(*) as count 
         FROM quiz_attempts 
         WHERE completed_at IS NOT NULL 
         AND (score * 100.0 / total_questions) >= 60
-      `
+      `,
+        []
       )
-      .get().count;
+    ).rows[0].count;
 
     const successRate =
       completedAttempts > 0
@@ -996,35 +992,37 @@ app.get("/api/stats", (_req, res) => {
         : 0;
 
     // Calculate average score
-    const avgScoreResult = db
-      .prepare(
+    const avgScoreResult = (
+      await pool.query(
         `
         SELECT AVG(score * 100.0 / total_questions) as avgScore 
         FROM quiz_attempts 
         WHERE completed_at IS NOT NULL AND total_questions > 0
-      `
+      `,
+        []
       )
-      .get();
+    ).rows[0];
 
-    const averageScore = avgScoreResult.avgScore
-      ? Math.round(avgScoreResult.avgScore * 10) / 10
+    const averageScore = avgScoreResult.avgscore
+      ? Math.round(avgScoreResult.avgscore * 10) / 10
       : 0;
 
     // Recent activity data
-    const recentQuizzes = db
-      .prepare(
+    const recentQuizzes = (
+      await pool.query(
         `
         SELECT q.title, q.created_at, u.username as created_by
         FROM quizzes q
         LEFT JOIN users u ON q.created_by = u.id
         ORDER BY q.created_at DESC
         LIMIT 5
-      `
+      `,
+        []
       )
-      .all();
+    ).rows;
 
-    const recentAttempts = db
-      .prepare(
+    const recentAttempts = (
+      await pool.query(
         `
         SELECT qa.completed_at, qa.score, qa.total_questions,
                u.username, q.title as quiz_title
@@ -1034,9 +1032,10 @@ app.get("/api/stats", (_req, res) => {
         WHERE qa.completed_at IS NOT NULL
         ORDER BY qa.completed_at DESC
         LIMIT 5
-      `
+      `,
+        []
       )
-      .all();
+    ).rows;
 
     res.json({
       success: true,
@@ -1059,38 +1058,46 @@ app.get("/api/stats", (_req, res) => {
 });
 
 // Admin metrics endpoint (requires admin access)
-app.get("/api/admin/metrics", (req, res) => {
+app.get("/api/admin/metrics", async (req, res) => {
   try {
     // User statistics
-    const totalUsers = db
-      .prepare("SELECT COUNT(*) as count FROM users")
-      .get().count;
+    const totalUsers = (
+      await pool.query("SELECT COUNT(*) as count FROM users", [])
+    ).rows[0].count;
 
-    const activeUsers = db
-      .prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'")
-      .get().count;
+    const activeUsers = (
+      await pool.query(
+        "SELECT COUNT(*) as count FROM users WHERE status = 'active'",
+        []
+      )
+    ).rows[0].count;
 
-    const adminUsers = db
-      .prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'")
-      .get().count;
+    const adminUsers = (
+      await pool.query(
+        "SELECT COUNT(*) as count FROM users WHERE role = 'admin'",
+        []
+      )
+    ).rows[0].count;
 
     // Access requests
-    const pendingAccessRequests = db
-      .prepare(
-        "SELECT COUNT(*) as count FROM access_requests WHERE status = 'pending'"
+    const pendingAccessRequests = (
+      await pool.query(
+        "SELECT COUNT(*) as count FROM access_requests WHERE status = 'pending'",
+        []
       )
-      .get().count;
+    ).rows[0].count;
 
     // System health calculation (based on recent activity)
-    const recentActivity = db
-      .prepare(
+    const recentActivity = (
+      await pool.query(
         `
         SELECT COUNT(*) as count 
         FROM quiz_attempts 
-        WHERE created_at >= datetime('now', '-7 days')
-      `
+        WHERE started_at >= NOW() - INTERVAL '7 days'
+      `,
+        []
       )
-      .get().count;
+    ).rows[0].count;
 
     const systemHealthScore = Math.min(
       100,
@@ -1098,48 +1105,50 @@ app.get("/api/admin/metrics", (req, res) => {
     );
 
     // Storage calculation (estimate based on data volume)
-    const totalRecords = db
-      .prepare(
+    const totalRecords = (
+      await pool.query(
         `
         SELECT 
           (SELECT COUNT(*) FROM users) +
           (SELECT COUNT(*) FROM quizzes) +
           (SELECT COUNT(*) FROM questions) +
-          (SELECT COUNT(*) FROM quiz_attempts) +
-          (SELECT COUNT(*) FROM user_answers) as total
-      `
+          (SELECT COUNT(*) FROM quiz_attempts) as total
+      `,
+        []
       )
-      .get().total;
+    ).rows[0].total;
 
     const storageUsed = Math.min(100, Math.round((totalRecords / 10000) * 100));
 
     // Recent user registrations
-    const recentUsers = db
-      .prepare(
+    const recentUsers = (
+      await pool.query(
         `
         SELECT username, role, last_activity 
         FROM users 
         WHERE id > (SELECT MAX(id) - 10 FROM users)
         ORDER BY id DESC
         LIMIT 5
-      `
+      `,
+        []
       )
-      .all();
+    ).rows;
 
     // Quiz activity by day (last 7 days)
-    const dailyActivity = db
-      .prepare(
+    const dailyActivity = (
+      await pool.query(
         `
         SELECT 
           DATE(started_at) as date,
           COUNT(*) as attempts
         FROM quiz_attempts 
-        WHERE started_at >= datetime('now', '-7 days')
+        WHERE started_at >= NOW() - INTERVAL '7 days'
         GROUP BY DATE(started_at)
         ORDER BY date DESC
-      `
+      `,
+        []
       )
-      .all();
+    ).rows;
 
     res.json({
       success: true,
@@ -1163,15 +1172,10 @@ app.get("/api/admin/metrics", (req, res) => {
 });
 
 // Quiz assignments endpoints
-app.get("/api/quiz-assignments", (req, res) => {
+app.get("/api/quiz-assignments", async (req, res) => {
   try {
-    const assignments = db
-      .prepare(
-        `
-      SELECT * FROM quiz_assignments
-    `
-      )
-      .all();
+    const result = await pool.query("SELECT * FROM quiz_assignments");
+    const assignments = result.rows;
 
     res.json({ success: true, assignments });
   } catch (error) {
@@ -1182,7 +1186,7 @@ app.get("/api/quiz-assignments", (req, res) => {
   }
 });
 
-app.post("/api/quiz-assignments", (req, res) => {
+app.post("/api/quiz-assignments", async (req, res) => {
   const {
     quizId: quiz_id,
     userId: user_id,
@@ -1198,72 +1202,50 @@ app.post("/api/quiz-assignments", (req, res) => {
   }
 
   try {
-    // Convert boolean values to integers for SQLite
-    const is_assigned = isAssigned !== undefined ? (isAssigned ? 1 : 0) : 1;
-    const has_access = hasAccess !== undefined ? (hasAccess ? 1 : 0) : 0; // Default to no access
-
     // Check if assignment already exists
-    const existingAssignment = db
-      .prepare(
+    const existingAssignment = (
+      await pool.query(
         `
       SELECT * FROM quiz_assignments 
-      WHERE quiz_id = ? AND user_id = ?
-    `
+      WHERE quiz_id = $1 AND user_id = $2
+    `,
+        [quiz_id, user_id]
       )
-      .get(quiz_id, user_id);
+    ).rows[0];
 
     if (existingAssignment) {
-      const updateAssignment = db.prepare(`
+      await pool.query(
+        `
         UPDATE quiz_assignments 
-        SET is_assigned = ?, has_access = ?, assigned_by = ?, assigned_at = ? 
-        WHERE id = ?
-      `);
-
-      updateAssignment.run(
-        is_assigned,
-        has_access,
-        assigned_by,
-        new Date().toISOString(),
-        existingAssignment.id
+        SET assigned_by = $1, assigned_at = $2 
+        WHERE id = $3
+      `,
+        [assigned_by, new Date(), existingAssignment.id]
       );
 
       // Get the updated assignment
-      const updatedAssignment = db
-        .prepare(
+      const updatedAssignment = (
+        await pool.query(
           `
-        SELECT * FROM quiz_assignments WHERE id = ?
-      `
+        SELECT * FROM quiz_assignments WHERE id = $1
+      `,
+          [existingAssignment.id]
         )
-        .get(existingAssignment.id);
+      ).rows[0];
 
       return res.json({ success: true, assignment: updatedAssignment });
     } else {
-      const insertAssignment = db.prepare(`
-        INSERT INTO quiz_assignments (quiz_id, user_id, is_assigned, has_access, assigned_by, assigned_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-
-      const result = insertAssignment.run(
-        quiz_id,
-        user_id,
-        is_assigned,
-        has_access,
-        assigned_by,
-        new Date().toISOString()
+      const result = await pool.query(
+        `
+        INSERT INTO quiz_assignments (quiz_id, user_id, assigned_by, assigned_at)
+        VALUES ($1, $2, $3, $4) RETURNING *
+      `,
+        [quiz_id, user_id, assigned_by, new Date()]
       );
-
-      // Get the newly created assignment
-      const newAssignment = db
-        .prepare(
-          `
-        SELECT * FROM quiz_assignments WHERE id = ?
-      `
-        )
-        .get(result.lastInsertRowid);
 
       return res.status(201).json({
         success: true,
-        assignment: newAssignment,
+        assignment: result.rows[0],
       });
     }
   } catch (error) {
@@ -1273,7 +1255,7 @@ app.post("/api/quiz-assignments", (req, res) => {
 });
 
 // Bulk quiz assignment endpoint
-app.put("/api/quiz-assignments/bulk", (req, res) => {
+app.put("/api/quiz-assignments/bulk", async (req, res) => {
   const { userId, assignments, assignedBy } = req.body;
 
   if (!userId || !Array.isArray(assignments) || !assignedBy) {
@@ -1287,77 +1269,112 @@ app.put("/api/quiz-assignments/bulk", (req, res) => {
   try {
     // Begin a transaction for bulk update
     const updatedAssignments = [];
-    db.transaction(() => {
-      for (const assignment of assignments) {
-        const { quizId, isAssigned, hasAccess } = assignment;
+    const client = await pool.connect();
 
-        // Convert boolean values to integers for SQLite
-        const isAssignedValue = isAssigned ? 1 : 0;
-        const hasAccessValue = hasAccess ? 1 : 0;
+    try {
+      await client.query("BEGIN");
+
+      for (const assignment of assignments) {
+        const { quizId } = assignment;
 
         // Check if an assignment already exists for this user and quiz
-        const existingAssignment = db
-          .prepare(
+        const existingAssignment = (
+          await client.query(
             `
-          SELECT * FROM quiz_assignments 
-          WHERE quiz_id = ? AND user_id = ?
-        `
+          SELECT qa.*, q.title as quiz_title, q.description as quiz_description
+          FROM quiz_assignments qa
+          JOIN quizzes q ON qa.quiz_id = q.id
+          WHERE qa.quiz_id = $1 AND qa.user_id = $2
+        `,
+            [quizId, userId]
           )
-          .get(quizId, userId);
+        ).rows[0];
 
         if (existingAssignment) {
           // Update existing assignment
-          const updateStmt = db.prepare(`
+          await client.query(
+            `
             UPDATE quiz_assignments 
-            SET is_assigned = ?, has_access = ?, assigned_by = ?, assigned_at = ? 
-            WHERE id = ?
-          `);
-          updateStmt.run(
-            isAssignedValue,
-            hasAccessValue,
-            assignedBy,
-            new Date().toISOString(),
-            existingAssignment.id
+            SET assigned_by = $1, assigned_at = $2 
+            WHERE id = $3
+          `,
+            [assignedBy, new Date(), existingAssignment.id]
           );
 
-          // Get the updated assignment
-          const updated = db
-            .prepare(
+          // Get the updated assignment with quiz details
+          const updated = (
+            await client.query(
               `
-            SELECT * FROM quiz_assignments WHERE id = ?
-          `
+            SELECT qa.*, q.title as quiz_title, q.description as quiz_description,
+                   u.username as assigned_by_username
+            FROM quiz_assignments qa
+            JOIN quizzes q ON qa.quiz_id = q.id
+            LEFT JOIN users u ON qa.assigned_by = u.id
+            WHERE qa.id = $1
+          `,
+              [existingAssignment.id]
             )
-            .get(existingAssignment.id);
+          ).rows[0];
           updatedAssignments.push(updated);
         } else {
           // Insert new assignment
-          const insertStmt = db.prepare(`
-            INSERT INTO quiz_assignments (quiz_id, user_id, is_assigned, has_access, assigned_by, assigned_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-          `);
-          const result = insertStmt.run(
-            quizId,
-            userId,
-            isAssignedValue,
-            hasAccessValue,
-            assignedBy,
-            new Date().toISOString()
+          const result = await client.query(
+            `
+            INSERT INTO quiz_assignments (quiz_id, user_id, assigned_by, assigned_at)
+            VALUES ($1, $2, $3, $4) RETURNING *
+          `,
+            [quizId, userId, assignedBy, new Date()]
           );
 
-          // Get the new assignment
-          const newAssignment = db
-            .prepare(
+          // Get the full assignment details with quiz info
+          const fullAssignment = (
+            await client.query(
               `
-            SELECT * FROM quiz_assignments WHERE id = ?
-          `
+            SELECT qa.*, q.title as quiz_title, q.description as quiz_description,
+                   u.username as assigned_by_username
+            FROM quiz_assignments qa
+            JOIN quizzes q ON qa.quiz_id = q.id
+            LEFT JOIN users u ON qa.assigned_by = u.id
+            WHERE qa.id = $1
+          `,
+              [result.rows[0].id]
             )
-            .get(result.lastInsertRowid);
-          updatedAssignments.push(newAssignment);
+          ).rows[0];
+
+          updatedAssignments.push(fullAssignment);
         }
       }
-    })();
 
-    res.json({ success: true, assignments: updatedAssignments });
+      await client.query("COMMIT");
+
+      // Also return the updated user with all their assignments
+      const userAssignments = (
+        await client.query(
+          `
+        SELECT qa.*, q.title as quiz_title, q.description as quiz_description,
+               u.username as assigned_by_username
+        FROM quiz_assignments qa
+        JOIN quizzes q ON qa.quiz_id = q.id
+        LEFT JOIN users u ON qa.assigned_by = u.id
+        WHERE qa.user_id = $1
+        ORDER BY qa.assigned_at DESC
+      `,
+          [userId]
+        )
+      ).rows;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    res.json({
+      success: true,
+      assignments: updatedAssignments,
+      userAssignments: userAssignments,
+      message: `Successfully updated ${updatedAssignments.length} quiz assignments`,
+    });
   } catch (error) {
     console.error("Bulk assignment error:", error);
     res.status(500).json({
@@ -1367,17 +1384,18 @@ app.put("/api/quiz-assignments/bulk", (req, res) => {
   }
 });
 
-app.get("/api/users/:id/quiz-assignments", (req, res) => {
+app.get("/api/users/:id/quiz-assignments", async (req, res) => {
   const userId = Number(req.params.id);
 
   try {
-    const assignments = db
-      .prepare(
+    const assignments = (
+      await pool.query(
         `
-      SELECT * FROM quiz_assignments WHERE user_id = ?
-    `
+      SELECT * FROM quiz_assignments WHERE user_id = $1
+    `,
+        [userId]
       )
-      .all(userId);
+    ).rows;
 
     res.json({ success: true, assignments });
   } catch (error) {
@@ -1388,16 +1406,16 @@ app.get("/api/users/:id/quiz-assignments", (req, res) => {
   }
 });
 
-app.delete("/api/quiz-assignments/:id", (req, res) => {
+app.delete("/api/quiz-assignments/:id", async (req, res) => {
   const assignmentId = Number(req.params.id);
 
   try {
-    const deleteAssignment = db.prepare(
-      "DELETE FROM quiz_assignments WHERE id = ?"
+    const result = await pool.query(
+      "DELETE FROM quiz_assignments WHERE id = $1",
+      [assignmentId]
     );
-    const result = deleteAssignment.run(assignmentId);
 
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
       return res
         .status(404)
         .json({ success: false, message: "Assignment not found" });
@@ -1413,7 +1431,7 @@ app.delete("/api/quiz-assignments/:id", (req, res) => {
 });
 
 // Access request endpoints
-app.post("/api/access-requests", (req, res) => {
+app.post("/api/access-requests", async (req, res) => {
   console.log("Access request POST received:", req.body);
   const { quizId: quiz_id, userId: user_id, message } = req.body || {};
 
@@ -1429,14 +1447,15 @@ app.post("/api/access-requests", (req, res) => {
   try {
     // Check if there's already a pending request
     console.log("Checking for existing request...");
-    const existingRequest = db
-      .prepare(
+    const existingRequest = (
+      await pool.query(
         `
       SELECT * FROM access_requests 
-      WHERE quiz_id = ? AND user_id = ? AND status = 'pending'
-    `
+      WHERE quiz_id = $1 AND user_id = $2 AND status = 'pending'
+    `,
+        [quiz_id, user_id]
       )
-      .get(quiz_id, user_id);
+    ).rows[0];
 
     console.log("Existing request check result:", existingRequest);
 
@@ -1449,28 +1468,18 @@ app.post("/api/access-requests", (req, res) => {
     }
 
     console.log("Preparing insert statement...");
-    const insertRequest = db.prepare(`
-      INSERT INTO access_requests (quiz_id, user_id, message, requested_at, status)
-      VALUES (?, ?, ?, ?, 'pending')
-    `);
-
-    console.log("Executing insert with values:", [
-      quiz_id,
-      user_id,
-      message || null,
-      new Date().toISOString(),
-    ]);
-    const result = insertRequest.run(
-      quiz_id,
-      user_id,
-      message || null,
-      new Date().toISOString()
+    const result = await pool.query(
+      `
+      INSERT INTO access_requests (quiz_id, user_id, reason, requested_at, status)
+      VALUES ($1, $2, $3, $4, 'pending') RETURNING id
+    `,
+      [quiz_id, user_id, message || null, new Date()]
     );
 
     console.log("Insert result:", result);
     res.status(201).json({
       success: true,
-      requestId: result.lastInsertRowid,
+      requestId: result.rows[0].id,
     });
   } catch (error) {
     console.error("Access request error (detailed):", error);
@@ -1481,7 +1490,7 @@ app.post("/api/access-requests", (req, res) => {
   }
 });
 
-app.get("/api/access-requests", (req, res) => {
+app.get("/api/access-requests", async (req, res) => {
   const { status } = req.query;
 
   try {
@@ -1494,13 +1503,13 @@ app.get("/api/access-requests", (req, res) => {
 
     let params = [];
     if (status) {
-      query += " WHERE ar.status = ?";
+      query += " WHERE ar.status = $1";
       params.push(status);
     }
 
     query += " ORDER BY ar.requested_at DESC";
 
-    const requests = db.prepare(query).all(...params);
+    const requests = (await pool.query(query, params)).rows;
 
     res.json({ success: true, requests });
   } catch (error) {
@@ -1512,7 +1521,7 @@ app.get("/api/access-requests", (req, res) => {
 });
 
 // Get access requests for a specific user
-app.get("/api/users/:id/access-requests", (req, res) => {
+app.get("/api/users/:id/access-requests", async (req, res) => {
   const userId = Number(req.params.id);
   const { status } = req.query;
 
@@ -1521,18 +1530,18 @@ app.get("/api/users/:id/access-requests", (req, res) => {
       SELECT ar.*, q.title as quiz_title
       FROM access_requests ar
       JOIN quizzes q ON ar.quiz_id = q.id
-      WHERE ar.user_id = ?
+      WHERE ar.user_id = $1
     `;
 
     let params = [userId];
     if (status) {
-      query += " AND ar.status = ?";
+      query += " AND ar.status = $2";
       params.push(status);
     }
 
     query += " ORDER BY ar.requested_at DESC";
 
-    const requests = db.prepare(query).all(...params);
+    const requests = (await pool.query(query, params)).rows;
 
     res.json({ success: true, requests });
   } catch (error) {
@@ -1544,7 +1553,7 @@ app.get("/api/users/:id/access-requests", (req, res) => {
   }
 });
 
-app.put("/api/access-requests/:id", (req, res) => {
+app.put("/api/access-requests/:id", async (req, res) => {
   const requestId = Number(req.params.id);
   const { status, reviewedBy: resolved_by, responseMessage } = req.body || {};
 
@@ -1562,9 +1571,11 @@ app.put("/api/access-requests/:id", (req, res) => {
   }
 
   try {
-    const request = db
-      .prepare("SELECT * FROM access_requests WHERE id = ?")
-      .get(requestId);
+    const request = (
+      await pool.query("SELECT * FROM access_requests WHERE id = $1", [
+        requestId,
+      ])
+    ).rows[0];
 
     if (!request) {
       return res
@@ -1573,66 +1584,77 @@ app.put("/api/access-requests/:id", (req, res) => {
     }
 
     // Begin transaction
-    const result = db.transaction(() => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
       // Update access request
-      db.prepare(
+      await client.query(
         `
         UPDATE access_requests 
-        SET status = ?, reviewed_at = ?, reviewed_by = ?
-        WHERE id = ?
-      `
-      ).run(status, new Date().toISOString(), resolved_by, requestId);
+        SET status = $1, reviewed_at = $2, reviewed_by = $3
+        WHERE id = $4
+      `,
+        [status, new Date(), resolved_by, requestId]
+      );
 
       // If approved, create quiz assignment
       if (status === "approved") {
         // Check if assignment exists
-        const existingAssignment = db
-          .prepare(
+        const existingAssignment = (
+          await client.query(
             `
           SELECT * FROM quiz_assignments 
-          WHERE quiz_id = ? AND user_id = ?
-        `
+          WHERE quiz_id = $1 AND user_id = $2
+        `,
+            [request.quiz_id, request.user_id]
           )
-          .get(request.quiz_id, request.user_id);
+        ).rows[0];
 
         if (existingAssignment) {
-          db.prepare(
+          await client.query(
             `
             UPDATE quiz_assignments 
-            SET is_assigned = 1, has_access = 1, assigned_by = ?, assigned_at = ?
-            WHERE id = ?
-          `
-          ).run(resolved_by, new Date().toISOString(), existingAssignment.id);
+            SET assigned_by = $1, assigned_at = $2
+            WHERE id = $3
+          `,
+            [resolved_by, new Date(), existingAssignment.id]
+          );
         } else {
-          db.prepare(
+          await client.query(
             `
-            INSERT INTO quiz_assignments (quiz_id, user_id, is_assigned, has_access, assigned_by, assigned_at)
-            VALUES (?, ?, 1, 1, ?, ?)
-          `
-          ).run(
-            request.quiz_id,
-            request.user_id,
-            resolved_by,
-            new Date().toISOString()
+            INSERT INTO quiz_assignments (quiz_id, user_id, assigned_by, assigned_at)
+            VALUES ($1, $2, $3, $4)
+          `,
+            [request.quiz_id, request.user_id, resolved_by, new Date()]
           );
         }
 
         // Update the request with response message if provided
         if (responseMessage) {
-          db.prepare(
+          await client.query(
             `
             UPDATE access_requests 
-            SET response_message = ? 
-            WHERE id = ?
-          `
-          ).run(responseMessage, requestId);
+            SET reason = $1 
+            WHERE id = $2
+          `,
+            [responseMessage, requestId]
+          );
         }
       }
 
-      return { success: true };
-    })();
+      await client.query("COMMIT");
 
-    res.json(result);
+      res.json({
+        success: true,
+        message: "Access request updated successfully",
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error("Update access request error:", error);
     res
@@ -1643,41 +1665,60 @@ app.put("/api/access-requests/:id", (req, res) => {
 
 // Database Management Endpoints
 // Get all tables with row counts
-app.get("/api/database/tables", (req, res) => {
+app.get("/api/database/tables", async (req, res) => {
   try {
-    // Get all table names
-    const tables = db
-      .prepare(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
-      )
-      .all();
+    // Get all table names from PostgreSQL information_schema
+    const result = await pool.query(`
+      SELECT table_name as name
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_type = 'BASE TABLE'
+      ORDER BY table_name
+    `);
 
     // Get row count for each table
-    const tablesWithCounts = tables.map((table) => {
-      try {
-        const countResult = db
-          .prepare(`SELECT COUNT(*) as count FROM ${table.name}`)
-          .get();
-        const schemaResult = db
-          .prepare(
-            `SELECT sql FROM sqlite_master WHERE type='table' AND name=?`
-          )
-          .get(table.name);
+    const tablesWithCounts = await Promise.all(
+      result.rows.map(async (table) => {
+        try {
+          const countResult = await pool.query(
+            `SELECT COUNT(*) as count FROM ${table.name}`
+          );
+          const schemaResult = await pool.query(
+            `
+            SELECT 
+              'CREATE TABLE ' || table_name || ' (' ||
+              array_to_string(
+                array_agg(column_name || ' ' || data_type || 
+                  CASE 
+                    WHEN character_maximum_length IS NOT NULL 
+                    THEN '(' || character_maximum_length || ')' 
+                    ELSE '' 
+                  END ||
+                  CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END
+                ), ', '
+              ) || ');' as sql
+            FROM information_schema.columns 
+            WHERE table_name = $1 
+            GROUP BY table_name
+          `,
+            [table.name]
+          );
 
-        return {
-          name: table.name,
-          rowCount: countResult.count,
-          sql: schemaResult.sql,
-        };
-      } catch (error) {
-        console.error(`Error getting info for table ${table.name}:`, error);
-        return {
-          name: table.name,
-          rowCount: 0,
-          sql: "Error retrieving schema",
-        };
-      }
-    });
+          return {
+            name: table.name,
+            rowCount: parseInt(countResult.rows[0].count),
+            sql: schemaResult.rows[0]?.sql || "Schema not available",
+          };
+        } catch (error) {
+          console.error(`Error getting info for table ${table.name}:`, error);
+          return {
+            name: table.name,
+            rowCount: 0,
+            sql: "Error retrieving schema",
+          };
+        }
+      })
+    );
 
     res.json({
       success: true,
@@ -1693,7 +1734,7 @@ app.get("/api/database/tables", (req, res) => {
 });
 
 // Execute SQL query
-app.post("/api/database/query", (req, res) => {
+app.post("/api/database/query", async (req, res) => {
   const { query } = req.body;
 
   if (!query || !query.trim()) {
@@ -1710,45 +1751,38 @@ app.post("/api/database/query", (req, res) => {
     // Determine if this is a SELECT query or a modification query
     const isSelectQuery =
       trimmedQuery.toLowerCase().startsWith("select") ||
-      trimmedQuery.toLowerCase().startsWith("pragma") ||
+      trimmedQuery.toLowerCase().startsWith("with") ||
       trimmedQuery.toLowerCase().startsWith("explain");
 
     if (isSelectQuery) {
       // For SELECT queries, return the data
-      const stmt = db.prepare(trimmedQuery);
-      const result = stmt.all();
+      const result = await pool.query(trimmedQuery);
 
       // Get column names
       let columns = [];
-      if (result.length > 0) {
-        columns = Object.keys(result[0]);
-      } else {
-        // Try to get columns from the statement info (limited support)
-        try {
-          const mockResult = stmt.get();
-          if (mockResult) columns = Object.keys(mockResult);
-        } catch (e) {
-          // If no data, we can't determine columns easily
-        }
+      if (result.rows.length > 0) {
+        columns = Object.keys(result.rows[0]);
+      } else if (result.fields) {
+        columns = result.fields.map((field) => field.name);
       }
 
       res.json({
         success: true,
-        data: result,
+        data: result.rows,
         columns: columns,
-        rowCount: result.length,
-        message: `Query returned ${result.length} rows`,
+        rowCount: result.rows.length,
+        message: `Query returned ${result.rows.length} rows`,
       });
     } else {
       // For modification queries (INSERT, UPDATE, DELETE, CREATE, etc.)
-      const stmt = db.prepare(trimmedQuery);
-      const result = stmt.run();
+      const result = await pool.query(trimmedQuery);
 
       res.json({
         success: true,
-        rowCount: result.changes,
-        lastInsertRowid: result.lastInsertRowid,
-        message: `Query executed successfully. ${result.changes} rows affected.`,
+        rowCount: result.rowCount || 0,
+        message: `Query executed successfully. ${
+          result.rowCount || 0
+        } rows affected.`,
       });
     }
   } catch (error) {

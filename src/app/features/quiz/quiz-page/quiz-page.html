@@ -1,26 +1,22 @@
 <div class="quiz-container">
-  <!-- Loading State -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="loading-content">
+  <div class="quiz-main-box">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="content-section">
       <div class="spinner"></div>
       <p>Loading quiz...</p>
     </div>
-  </div>
 
-  <!-- Error State -->
-  <div *ngIf="error && !loading" class="error-state">
-    <div class="error-content">
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="content-section">
       <h3>Oops! Something went wrong</h3>
       <p>{{ error }}</p>
       <button class="btn btn-primary" (click)="backToQuizSelection()">
         Back to Quiz Selection
       </button>
     </div>
-  </div>
 
-  <!-- Quiz Selection -->
-  <div *ngIf="!selectedQuiz && !loading && !error" class="quiz-selection">
-    <div class="quiz-body">
+    <!-- Quiz Selection -->
+    <div *ngIf="!selectedQuiz && !loading && !error" class="content-section">
       <div *ngIf="quizzes.length === 0" class="no-quizzes">
         <p>No quizzes available at the moment.</p>
       </div>
@@ -36,31 +32,32 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Quiz Questions -->
-  <div
-    *ngIf="selectedQuiz && !showReview && !showResults && !loading && !error && questions.length > 0"
-    class="quiz-taking"
-  >
-    <div class="quiz-header">
-      <h2>{{ selectedQuiz.title }}</h2>
-      <div class="quiz-progress">
-        <div
-          class="progress-bar"
-          [style.width.%]="((currentIndex + 1) / questions.length) * 100"
-        ></div>
+    <!-- Quiz Questions -->
+    <div
+      *ngIf="selectedQuiz && !showReview && !showResults && !loading && !error && questions.length > 0"
+      class="content-section"
+    >
+      <div class="quiz-header">
+        <h2>{{ selectedQuiz.title }}</h2>
+        <div class="quiz-progress">
+          <div
+            class="progress-bar"
+            [style.width.%]="((currentIndex + 1) / questions.length) * 100"
+          ></div>
+        </div>
+        <p class="progress-text">
+          Question {{ currentIndex + 1 }} of {{ questions.length }}
+        </p>
       </div>
-      <p class="progress-text">
-        Question {{ currentIndex + 1 }} of {{ questions.length }}
-      </p>
-    </div>
 
-    <div class="quiz-body">
       <div class="quiz-question">
-        <label>{{ questions[currentIndex].text }}</label>
+        <label
+          >{{ questions[currentIndex]?.text || questions[currentIndex]?.question
+          || 'Question not available' }}</label
+        >
         <input
-          *ngIf="questions[currentIndex].id !== undefined"
+          *ngIf="questions[currentIndex]?.id !== undefined"
           [(ngModel)]="answers[questions[currentIndex].id!]"
           placeholder="Enter your answer..."
           class="quiz-input"
@@ -98,27 +95,25 @@
           Review Answers
         </button>
       </div>
+
+      <!-- No Questions Available -->
+      <div *ngIf="questions.length === 0" class="no-questions">
+        <p>No questions available for this quiz.</p>
+        <button class="btn btn-secondary" (click)="backToQuizSelection()">
+          Back to Quiz Selection
+        </button>
+      </div>
     </div>
 
-    <!-- No Questions Available -->
-    <div *ngIf="questions.length === 0" class="no-questions">
-      <p>No questions available for this quiz.</p>
-      <button class="btn btn-secondary" (click)="backToQuizSelection()">
-        Back to Quiz Selection
-      </button>
-    </div>
-  </div>
-
-  <!-- Review Answers -->
-  <div *ngIf="showReview" class="quiz-review">
-    <div class="quiz-header">
-      <h2>Review Your Answers</h2>
-    </div>
-    <div class="quiz-body">
+    <!-- Review Answers -->
+    <div *ngIf="showReview" class="content-section">
+      <div class="quiz-header">
+        <h2>Review Your Answers</h2>
+      </div>
       <div *ngFor="let q of questions; let i = index" class="quiz-question">
         <label>
           <span class="question-number">{{ i + 1 }}.</span>
-          {{ q.text }}
+          {{ q.text || q.question || 'Question not available' }}
         </label>
         <div class="answer-display">
           {{ q.id !== undefined ? (answers[q.id] || 'No answer') : 'No answer'
@@ -134,23 +129,21 @@
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- Quiz Results -->
-  <div *ngIf="showResults" class="quiz-results">
-    <div class="quiz-header">
-      <h2>Quiz Results</h2>
-      <div class="score-display">
-        <div class="score-circle">
-          <span class="score-value">{{ score }}%</span>
+    <!-- Quiz Results -->
+    <div *ngIf="showResults" class="content-section">
+      <div class="quiz-header">
+        <h2>Quiz Results</h2>
+        <div class="score-display">
+          <div class="score-circle">
+            <span class="score-value">{{ score }}%</span>
+          </div>
+          <p class="score-text">
+            You scored {{ score }}% ({{ getCorrectAnswersCount() }} out of {{
+            results.length }} correct)
+          </p>
         </div>
-        <p class="score-text">
-          You scored {{ score }}% ({{ getCorrectAnswersCount() }} out of {{
-          results.length }} correct)
-        </p>
       </div>
-    </div>
-    <div class="quiz-body">
       <div class="results-list">
         <div
           *ngFor="let result of results; let i = index"

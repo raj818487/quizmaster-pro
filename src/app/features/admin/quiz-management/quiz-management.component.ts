@@ -193,9 +193,14 @@ export class QuizManagementComponent implements OnInit {
     try {
       const currentUser = this.authService.getCurrentUser();
       if (currentUser?.id) {
-        this.userQuizzes = await this.quizService.getUserQuizzes(
-          currentUser.id
-        );
+        // If user is admin, load all quizzes, otherwise load only user's quizzes
+        if (currentUser.role === 'admin') {
+          this.userQuizzes = await this.quizService.getAllQuizzes();
+        } else {
+          this.userQuizzes = await this.quizService.getUserQuizzes(
+            currentUser.id
+          );
+        }
       }
     } catch (error) {
       console.error('Error loading quizzes:', error);

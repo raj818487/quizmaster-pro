@@ -174,6 +174,37 @@ export class QuizAccessManagementComponent implements OnInit {
     }
   }
 
+  updateLocalAssignments(newAssignments: QuizAssignment[]) {
+    try {
+      console.log('Updating local assignments with:', newAssignments);
+
+      // Get current assignments
+      const currentAssignments = this.assignments();
+
+      // Create a map of existing assignments for quick lookup
+      const existingAssignmentsMap = new Map(
+        currentAssignments.map((a) => [`${a.user_id}-${a.quiz_id}`, a])
+      );
+
+      // Update existing assignments or add new ones
+      newAssignments.forEach((newAssignment) => {
+        const key = `${newAssignment.user_id}-${newAssignment.quiz_id}`;
+        existingAssignmentsMap.set(key, newAssignment);
+      });
+
+      // Convert back to array and update signal
+      const updatedAssignments = Array.from(existingAssignmentsMap.values());
+      this.assignments.set([...updatedAssignments]);
+
+      // Force change detection
+      this.cdr.detectChanges();
+
+      console.log('Local assignments updated successfully');
+    } catch (error) {
+      console.error('Error updating local assignments:', error);
+    }
+  }
+
   async loadInitialData() {
     this.loading.set(true);
 
@@ -393,10 +424,10 @@ export class QuizAccessManagementComponent implements OnInit {
         assignedBy: assignedBy,
       });
 
-      if (result && Array.isArray(result)) {
+      if (result && result.length > 0) {
         console.log('Bulk assign API response:', result);
-        // Small delay to ensure database transaction completes
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        // Update the assignments in the current data
+        this.updateLocalAssignments(result);
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
         this.toastService.success(
@@ -447,7 +478,9 @@ export class QuizAccessManagementComponent implements OnInit {
         assignedBy: assignedBy,
       });
 
-      if (result && Array.isArray(result)) {
+      if (result && result.length > 0) {
+        // Update the assignments in the current data
+        this.updateLocalAssignments(result);
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
         this.toastService.success(
@@ -500,7 +533,9 @@ export class QuizAccessManagementComponent implements OnInit {
         assignedBy: assignedBy,
       });
 
-      if (result && Array.isArray(result)) {
+      if (result && result.length > 0) {
+        // Update the assignments in the current data
+        this.updateLocalAssignments(result);
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
         this.toastService.success(
@@ -555,7 +590,9 @@ export class QuizAccessManagementComponent implements OnInit {
         assignedBy: assignedBy,
       });
 
-      if (result && Array.isArray(result)) {
+      if (result && result.length > 0) {
+        // Update the assignments in the current data
+        this.updateLocalAssignments(result);
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
         this.toastService.success(

@@ -64,13 +64,27 @@ export class QuizService {
 
   async getQuestions(quizId: number): Promise<Question[]> {
     try {
-      const qs =
+      const response: any =
         (await firstValueFrom(
-          this.http.get<Question[]>(
-            `${this.apiUrl}/quizzes/${quizId}/questions`
-          )
+          this.http.get<any[]>(`${this.apiUrl}/quizzes/${quizId}/questions`)
         )) || [];
-      return qs;
+
+      // Map the API response to match our Question interface
+      const questions: Question[] = response.map((q: any) => ({
+        id: q.id,
+        quiz_id: q.quiz_id,
+        text: q.question || q.text, // API returns 'question' but we expect 'text'
+        type: q.type || 'multiple_choice',
+        options:
+          typeof q.options === 'string'
+            ? JSON.parse(q.options)
+            : q.options || [],
+        correct_answer: q.correct_answer,
+        points: q.points || 10,
+      }));
+
+      console.log('Mapped questions:', questions);
+      return questions;
     } catch (error) {
       console.error('Error fetching questions:', error);
       return [];
