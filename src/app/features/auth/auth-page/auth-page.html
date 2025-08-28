@@ -5,7 +5,11 @@
       <p>Sign in to access your personalized quiz experience</p>
     </div>
 
-    <form class="auth-form" (ngSubmit)="isRegister ? register() : login()" #authForm="ngForm">
+    <form
+      class="auth-form"
+      (ngSubmit)="isRegister ? register() : login()"
+      #authForm="ngForm"
+    >
       <div class="form-group">
         <label class="form-label" for="username">Username</label>
         <input
@@ -38,12 +42,9 @@
         />
         @if (passwordField.invalid && passwordField.touched) {
         <div class="error-message">
-          @if (passwordField.errors?.['required']) {
-            Password is required
-          }
-          @if (passwordField.errors?.['minlength'] && isRegister) {
-            Password must be at least 6 characters long
-          }
+          @if (passwordField.errors?.['required']) { Password is required } @if
+          (passwordField.errors?.['minlength'] && isRegister) { Password must be
+          at least 6 characters long }
         </div>
         }
       </div>
@@ -58,7 +59,11 @@
       </div>
       }
 
-      <button type="submit" class="btn btn-primary auth-submit" [disabled]="authForm.invalid">
+      <button
+        type="submit"
+        class="btn btn-primary auth-submit"
+        [disabled]="authForm.invalid"
+      >
         {{ isRegister ? 'Create Account' : 'Sign In' }}
       </button>
     </form>

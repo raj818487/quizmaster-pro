@@ -68,13 +68,13 @@ export class AccessRequestService {
     try {
       console.log('Sending access request:', request);
       console.log('API URL:', `${this.apiUrl}/access-requests`);
-      
+
       const response: any = await firstValueFrom(
         this.http.post(`${this.apiUrl}/access-requests`, request)
       );
-      
+
       console.log('Access request response:', response);
-      
+
       return {
         success: response.success || false,
         message:

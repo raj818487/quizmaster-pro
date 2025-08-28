@@ -23,7 +23,12 @@ export const routes: Routes = [
   { path: 'quiz', component: QuizPageComponent },
   { path: 'quiz/:id', component: QuizPageComponent },
   { path: 'auth', component: AuthPage },
-  { path: 'dashboard', component: DashboardPage, data: { isAdminView: true }, canActivate: [adminGuard] as any },
+  {
+    path: 'dashboard',
+    component: DashboardPage,
+    data: { isAdminView: true },
+    canActivate: [adminGuard] as any,
+  },
   {
     path: 'admin/manage-users',
     component: ManageUsersComponent,

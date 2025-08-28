@@ -52,7 +52,7 @@ export interface DailyActivity {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class StatisticsService {
   private apiUrl = environment.apiUrl || '/api';
@@ -64,7 +64,7 @@ export class StatisticsService {
       const response: any = await firstValueFrom(
         this.http.get(`${this.apiUrl}/stats`)
       );
-      
+
       if (response.success) {
         return response.stats;
       } else {
@@ -81,7 +81,7 @@ export class StatisticsService {
       const response: any = await firstValueFrom(
         this.http.get(`${this.apiUrl}/admin/metrics`)
       );
-      
+
       if (response.success) {
         return response.metrics;
       } else {

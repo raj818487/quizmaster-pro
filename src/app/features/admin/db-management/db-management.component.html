@@ -17,8 +17,8 @@
       <div class="section">
         <h3>Database Tables</h3>
         <div class="table-list">
-          <div 
-            *ngFor="let table of tables()" 
+          <div
+            *ngFor="let table of tables()"
             class="table-item"
             [class.selected]="selectedTable() === table.name"
           >
@@ -27,15 +27,15 @@
               <span class="row-count">{{ table.rowCount }} rows</span>
             </div>
             <div class="table-actions">
-              <button 
-                class="btn btn-sm btn-secondary" 
+              <button
+                class="btn btn-sm btn-secondary"
                 (click)="showTableData(table.name)"
                 title="View data"
               >
                 📊 Data
               </button>
-              <button 
-                class="btn btn-sm btn-outline" 
+              <button
+                class="btn btn-sm btn-outline"
                 (click)="showTableSchema(table.name)"
                 title="View schema"
               >
@@ -53,7 +53,7 @@
       <div class="section">
         <h3>Common Queries</h3>
         <div class="query-list">
-          <button 
+          <button
             *ngFor="let query of commonQueries"
             class="query-button"
             (click)="selectCommonQuery(query.query)"
@@ -68,13 +68,17 @@
       <div class="section" *ngIf="queryHistory.length > 0">
         <h3>Query History</h3>
         <div class="history-list">
-          <div 
-            *ngFor="let historyQuery of queryHistory" 
+          <div
+            *ngFor="let historyQuery of queryHistory"
             class="history-item"
             (click)="selectFromHistory(historyQuery)"
             [title]="historyQuery"
           >
-            {{ historyQuery.length > 50 ? historyQuery.substring(0, 50) + '...' : historyQuery }}
+            {{
+              historyQuery.length > 50
+                ? historyQuery.substring(0, 50) + "..."
+                : historyQuery
+            }}
           </div>
         </div>
       </div>
@@ -93,17 +97,14 @@
             rows="8"
           ></textarea>
           <div class="editor-actions">
-            <button 
-              class="btn btn-primary" 
+            <button
+              class="btn btn-primary"
               (click)="executeQuery()"
               [disabled]="loading() || !sqlQuery.trim()"
             >
               ▶️ Execute Query
             </button>
-            <button 
-              class="btn btn-secondary" 
-              (click)="clearQuery()"
-            >
+            <button class="btn btn-secondary" (click)="clearQuery()">
               🗑️ Clear
             </button>
           </div>
@@ -123,7 +124,8 @@
         <div *ngIf="!queryResult()?.success" class="error-result">
           <div class="error-icon">❌</div>
           <div class="error-message">
-            <strong>Error:</strong> {{ queryResult()?.error || queryResult()?.message }}
+            <strong>Error:</strong>
+            {{ queryResult()?.error || queryResult()?.message }}
           </div>
         </div>
 
@@ -133,23 +135,39 @@
           <div class="result-info">
             <span class="success-icon">✅</span>
             <span>Query executed successfully</span>
-            <span *ngIf="queryResult()?.rowCount !== undefined" class="row-count">
+            <span
+              *ngIf="queryResult()?.rowCount !== undefined"
+              class="row-count"
+            >
               ({{ queryResult()?.rowCount }} rows)
             </span>
           </div>
 
           <!-- Data Table -->
-          <div *ngIf="queryResult()?.data && queryResult()?.data!.length > 0" class="data-table-container">
+          <div
+            *ngIf="queryResult()?.data && (queryResult()?.data)!.length > 0"
+            class="data-table-container"
+          >
             <table class="data-table">
               <thead>
                 <tr>
-                  <th *ngFor="let column of queryResult()?.columns">{{ column }}</th>
+                  <th *ngFor="let column of queryResult()?.columns">
+                    {{ column }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let row of queryResult()?.data; let i = index; trackBy: trackByIndex">
-                  <td *ngFor="let column of queryResult()?.columns" 
-                      [title]="formatValue(row[column])">
+                <tr
+                  *ngFor="
+                    let row of queryResult()?.data;
+                    let i = index;
+                    trackBy: trackByIndex
+                  "
+                >
+                  <td
+                    *ngFor="let column of queryResult()?.columns"
+                    [title]="formatValue(row[column])"
+                  >
                     {{ formatValue(row[column]) }}
                   </td>
                 </tr>
@@ -158,13 +176,19 @@
           </div>
 
           <!-- No Data Message -->
-          <div *ngIf="queryResult()?.data && queryResult()?.data!.length === 0" class="no-data">
+          <div
+            *ngIf="queryResult()?.data && (queryResult()?.data)!.length === 0"
+            class="no-data"
+          >
             <div class="no-data-icon">📄</div>
             <p>Query executed successfully but returned no data.</p>
           </div>
 
           <!-- Non-SELECT Query Result -->
-          <div *ngIf="!queryResult()?.data && queryResult()?.success" class="operation-success">
+          <div
+            *ngIf="!queryResult()?.data && queryResult()?.success"
+            class="operation-success"
+          >
             <div class="success-icon">✅</div>
             <p>Operation completed successfully.</p>
             <p *ngIf="queryResult()?.message">{{ queryResult()?.message }}</p>

@@ -5,14 +5,14 @@
   padding: 1rem;
   background: white;
   min-height: 100vh;
-  
+
   // Page header
   .page-header {
     display: flex;
     align-items: center;
     margin-bottom: 1rem;
     gap: 1rem;
-    
+
     h2 {
       margin: 0;
     }
@@ -60,7 +60,7 @@
       display: flex;
       align-items: center;
     }
-    
+
     .quiz-count {
       margin-left: 0.5rem;
       font-size: 0.875rem;
@@ -514,7 +514,7 @@
           .form-check-input {
             margin: 0;
             cursor: pointer;
-            
+
             &:focus {
               box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
             }
@@ -527,7 +527,7 @@
             font-weight: 500;
             margin: 0;
             user-select: none;
-            
+
             &:hover {
               color: #22c55e;
             }
@@ -686,7 +686,7 @@
       font-size: 0.875rem;
     }
   }
-  
+
   // Enhanced Modal styles
   .modal-overlay {
     position: fixed;
@@ -704,7 +704,7 @@
     padding: 20px;
     animation: overlayFadeIn 0.3s ease-out;
   }
-  
+
   .confirmation-dialog {
     background: white;
     border-radius: 20px;
@@ -714,15 +714,15 @@
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
     animation: dialogSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     border: 1px solid #f1f5f9;
-    
+
     .dialog-header {
       padding: 2rem 2rem 1rem 2rem;
       background: linear-gradient(135deg, #f8fafc, #f1f5f9);
       border-bottom: 2px solid #e2e8f0;
       position: relative;
-      
+
       &::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
@@ -730,7 +730,7 @@
         height: 4px;
         background: linear-gradient(135deg, #ef4444, #dc2626);
       }
-      
+
       h4 {
         margin: 0;
         font-size: 1.5rem;
@@ -739,29 +739,29 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        
+
         &::before {
-          content: '⚠️';
+          content: "⚠️";
           font-size: 1.8rem;
         }
       }
     }
-    
+
     .dialog-body {
       padding: 2rem;
-      
+
       p {
         margin: 0 0 1rem;
         font-size: 1.1rem;
         line-height: 1.6;
         color: #374151;
-        
+
         strong {
           color: #1e293b;
           font-weight: 600;
         }
       }
-      
+
       .warning-text {
         background: linear-gradient(135deg, #fef2f2, #fee2e2);
         border: 1px solid #fecaca;
@@ -775,14 +775,14 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        
+
         &::before {
-          content: '🚨';
+          content: "🚨";
           font-size: 1.2rem;
         }
       }
     }
-    
+
     .dialog-footer {
       padding: 1.5rem 2rem 2rem 2rem;
       background: #f8fafc;
@@ -790,7 +790,7 @@
       display: flex;
       justify-content: flex-end;
       gap: 1rem;
-      
+
       .btn {
         padding: 0.75rem 2rem;
         border-radius: 12px;
@@ -799,30 +799,30 @@
         border: none;
         cursor: pointer;
         transition: all 0.3s ease;
-        
+
         &.btn-secondary {
           background: #f1f5f9;
           color: #64748b;
           border: 2px solid #e2e8f0;
-          
+
           &:hover {
             background: #e2e8f0;
             color: #475569;
             transform: translateY(-1px);
           }
         }
-        
+
         &.btn-danger {
           background: linear-gradient(135deg, #ef4444, #dc2626);
           color: white;
           box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
-          
+
           &:hover {
             background: linear-gradient(135deg, #dc2626, #b91c1c);
             transform: translateY(-2px);
             box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
           }
-          
+
           &:active {
             transform: translateY(0);
           }
@@ -830,23 +830,23 @@
       }
     }
   }
-  
+
   @keyframes overlayFadeIn {
-    from { 
+    from {
       opacity: 0;
     }
-    to { 
+    to {
       opacity: 1;
     }
   }
-  
+
   @keyframes dialogSlideIn {
-    from { 
-      opacity: 0; 
+    from {
+      opacity: 0;
       transform: translateY(-30px) scale(0.95);
     }
-    to { 
-      opacity: 1; 
+    to {
+      opacity: 1;
       transform: translateY(0) scale(1);
     }
   }

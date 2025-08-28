@@ -97,12 +97,9 @@
             />
             @if (passwordField.invalid && passwordField.touched) {
             <div class="error-message">
-              @if (passwordField.errors?.['required']) {
-                Password is required
-              }
-              @if (passwordField.errors?.['minlength']) {
-                Password must be at least 6 characters long
-              }
+              @if (passwordField.errors?.['required']) { Password is required }
+              @if (passwordField.errors?.['minlength']) { Password must be at
+              least 6 characters long }
             </div>
             }
           </div>
@@ -234,7 +231,9 @@
               </div>
               <div class="edit-info">
                 <span class="user-id">ID: {{ user.id }}</span>
-                <span class="password-hint">Leave password fields empty to keep current password</span>
+                <span class="password-hint"
+                  >Leave password fields empty to keep current password</span
+                >
               </div>
             </div>
             }
@@ -327,10 +326,7 @@
                 Save
               </button>
               <span class="action-separator"></span>
-              <button
-                class="btn-text btn-delete"
-                (click)="cancelEdit(user)"
-              >
+              <button class="btn-text btn-delete" (click)="cancelEdit(user)">
                 Cancel
               </button>
             </div>

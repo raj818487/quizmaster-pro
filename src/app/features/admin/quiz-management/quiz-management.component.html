@@ -313,7 +313,11 @@
             >
               <label>Options</label>
               <div
-                *ngFor="let option of getOptionsAsStringArray(); let i = index; trackBy: trackByIndex"
+                *ngFor="
+                  let option of getOptionsAsStringArray();
+                  let i = index;
+                  trackBy: trackByIndex
+                "
                 class="option-group"
               >
                 <div class="option-row">

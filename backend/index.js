@@ -783,12 +783,10 @@ app.put("/api/users/:id", (req, res) => {
     console.error("Request body:", req.body);
     console.error("Update fields:", updateFields);
     console.error("Update params:", params);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to update user: " + error.message,
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update user: " + error.message,
+    });
   }
 });
 
@@ -961,63 +959,73 @@ app.get("/api/stats", (_req, res) => {
     const totalQuizzes = db
       .prepare("SELECT COUNT(*) as count FROM quizzes")
       .get().count;
-    
+
     const totalUsers = db
       .prepare("SELECT COUNT(*) as count FROM users")
       .get().count;
-    
+
     const activeUsers = db
       .prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'")
       .get().count;
-    
+
     const totalAttempts = db
       .prepare("SELECT COUNT(*) as count FROM quiz_attempts")
       .get().count;
-    
+
     const completedAttempts = db
-      .prepare("SELECT COUNT(*) as count FROM quiz_attempts WHERE completed_at IS NOT NULL")
+      .prepare(
+        "SELECT COUNT(*) as count FROM quiz_attempts WHERE completed_at IS NOT NULL"
+      )
       .get().count;
 
     // Calculate success rate (percentage of completed attempts with passing scores)
     const passingAttempts = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) as count 
         FROM quiz_attempts 
         WHERE completed_at IS NOT NULL 
         AND (score * 100.0 / total_questions) >= 60
-      `)
+      `
+      )
       .get().count;
 
-    const successRate = completedAttempts > 0 
-      ? Math.round((passingAttempts / completedAttempts) * 100) 
-      : 0;
+    const successRate =
+      completedAttempts > 0
+        ? Math.round((passingAttempts / completedAttempts) * 100)
+        : 0;
 
     // Calculate average score
     const avgScoreResult = db
-      .prepare(`
+      .prepare(
+        `
         SELECT AVG(score * 100.0 / total_questions) as avgScore 
         FROM quiz_attempts 
         WHERE completed_at IS NOT NULL AND total_questions > 0
-      `)
+      `
+      )
       .get();
-    
-    const averageScore = avgScoreResult.avgScore 
-      ? Math.round(avgScoreResult.avgScore * 10) / 10 
+
+    const averageScore = avgScoreResult.avgScore
+      ? Math.round(avgScoreResult.avgScore * 10) / 10
       : 0;
 
     // Recent activity data
     const recentQuizzes = db
-      .prepare(`
+      .prepare(
+        `
         SELECT q.title, q.created_at, u.username as created_by
         FROM quizzes q
         LEFT JOIN users u ON q.created_by = u.id
         ORDER BY q.created_at DESC
         LIMIT 5
-      `)
+      `
+      )
       .all();
 
     const recentAttempts = db
-      .prepare(`
+      .prepare(
+        `
         SELECT qa.completed_at, qa.score, qa.total_questions,
                u.username, q.title as quiz_title
         FROM quiz_attempts qa
@@ -1026,7 +1034,8 @@ app.get("/api/stats", (_req, res) => {
         WHERE qa.completed_at IS NOT NULL
         ORDER BY qa.completed_at DESC
         LIMIT 5
-      `)
+      `
+      )
       .all();
 
     res.json({
@@ -1040,7 +1049,7 @@ app.get("/api/stats", (_req, res) => {
         successRate,
         averageScore,
         recentQuizzes,
-        recentAttempts
+        recentAttempts,
       },
     });
   } catch (error) {
@@ -1056,59 +1065,71 @@ app.get("/api/admin/metrics", (req, res) => {
     const totalUsers = db
       .prepare("SELECT COUNT(*) as count FROM users")
       .get().count;
-    
+
     const activeUsers = db
       .prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'")
       .get().count;
-    
+
     const adminUsers = db
       .prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'")
       .get().count;
 
     // Access requests
     const pendingAccessRequests = db
-      .prepare("SELECT COUNT(*) as count FROM access_requests WHERE status = 'pending'")
+      .prepare(
+        "SELECT COUNT(*) as count FROM access_requests WHERE status = 'pending'"
+      )
       .get().count;
 
     // System health calculation (based on recent activity)
     const recentActivity = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) as count 
         FROM quiz_attempts 
         WHERE created_at >= datetime('now', '-7 days')
-      `)
+      `
+      )
       .get().count;
-    
-    const systemHealthScore = Math.min(100, Math.max(70, 70 + (recentActivity * 2)));
+
+    const systemHealthScore = Math.min(
+      100,
+      Math.max(70, 70 + recentActivity * 2)
+    );
 
     // Storage calculation (estimate based on data volume)
     const totalRecords = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           (SELECT COUNT(*) FROM users) +
           (SELECT COUNT(*) FROM quizzes) +
           (SELECT COUNT(*) FROM questions) +
           (SELECT COUNT(*) FROM quiz_attempts) +
           (SELECT COUNT(*) FROM user_answers) as total
-      `)
+      `
+      )
       .get().total;
-    
+
     const storageUsed = Math.min(100, Math.round((totalRecords / 10000) * 100));
 
     // Recent user registrations
     const recentUsers = db
-      .prepare(`
+      .prepare(
+        `
         SELECT username, role, last_activity 
         FROM users 
         WHERE id > (SELECT MAX(id) - 10 FROM users)
         ORDER BY id DESC
         LIMIT 5
-      `)
+      `
+      )
       .all();
 
     // Quiz activity by day (last 7 days)
     const dailyActivity = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           DATE(started_at) as date,
           COUNT(*) as attempts
@@ -1116,7 +1137,8 @@ app.get("/api/admin/metrics", (req, res) => {
         WHERE started_at >= datetime('now', '-7 days')
         GROUP BY DATE(started_at)
         ORDER BY date DESC
-      `)
+      `
+      )
       .all();
 
     res.json({
@@ -1129,12 +1151,14 @@ app.get("/api/admin/metrics", (req, res) => {
         systemHealthScore,
         storageUsed,
         recentUsers,
-        dailyActivity
+        dailyActivity,
       },
     });
   } catch (error) {
     console.error("Admin metrics error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch admin metrics" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch admin metrics" });
   }
 });
 
@@ -1430,7 +1454,12 @@ app.post("/api/access-requests", (req, res) => {
       VALUES (?, ?, ?, ?, 'pending')
     `);
 
-    console.log("Executing insert with values:", [quiz_id, user_id, message || null, new Date().toISOString()]);
+    console.log("Executing insert with values:", [
+      quiz_id,
+      user_id,
+      message || null,
+      new Date().toISOString(),
+    ]);
     const result = insertRequest.run(
       quiz_id,
       user_id,
@@ -1618,39 +1647,47 @@ app.get("/api/database/tables", (req, res) => {
   try {
     // Get all table names
     const tables = db
-      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
+      )
       .all();
-    
+
     // Get row count for each table
-    const tablesWithCounts = tables.map(table => {
+    const tablesWithCounts = tables.map((table) => {
       try {
-        const countResult = db.prepare(`SELECT COUNT(*) as count FROM ${table.name}`).get();
-        const schemaResult = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`).get(table.name);
-        
+        const countResult = db
+          .prepare(`SELECT COUNT(*) as count FROM ${table.name}`)
+          .get();
+        const schemaResult = db
+          .prepare(
+            `SELECT sql FROM sqlite_master WHERE type='table' AND name=?`
+          )
+          .get(table.name);
+
         return {
           name: table.name,
           rowCount: countResult.count,
-          sql: schemaResult.sql
+          sql: schemaResult.sql,
         };
       } catch (error) {
         console.error(`Error getting info for table ${table.name}:`, error);
         return {
           name: table.name,
           rowCount: 0,
-          sql: 'Error retrieving schema'
+          sql: "Error retrieving schema",
         };
       }
     });
 
-    res.json({ 
-      success: true, 
-      tables: tablesWithCounts 
+    res.json({
+      success: true,
+      tables: tablesWithCounts,
     });
   } catch (error) {
     console.error("Error getting database tables:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to get database tables" 
+    res.status(500).json({
+      success: false,
+      message: "Failed to get database tables",
     });
   }
 });
@@ -1658,28 +1695,29 @@ app.get("/api/database/tables", (req, res) => {
 // Execute SQL query
 app.post("/api/database/query", (req, res) => {
   const { query } = req.body;
-  
+
   if (!query || !query.trim()) {
-    return res.status(400).json({ 
-      success: false, 
-      error: "Query is required" 
+    return res.status(400).json({
+      success: false,
+      error: "Query is required",
     });
   }
 
   try {
     const trimmedQuery = query.trim();
     console.log("Executing query:", trimmedQuery);
-    
+
     // Determine if this is a SELECT query or a modification query
-    const isSelectQuery = trimmedQuery.toLowerCase().startsWith('select') || 
-                         trimmedQuery.toLowerCase().startsWith('pragma') ||
-                         trimmedQuery.toLowerCase().startsWith('explain');
-    
+    const isSelectQuery =
+      trimmedQuery.toLowerCase().startsWith("select") ||
+      trimmedQuery.toLowerCase().startsWith("pragma") ||
+      trimmedQuery.toLowerCase().startsWith("explain");
+
     if (isSelectQuery) {
       // For SELECT queries, return the data
       const stmt = db.prepare(trimmedQuery);
       const result = stmt.all();
-      
+
       // Get column names
       let columns = [];
       if (result.length > 0) {
@@ -1693,24 +1731,24 @@ app.post("/api/database/query", (req, res) => {
           // If no data, we can't determine columns easily
         }
       }
-      
+
       res.json({
         success: true,
         data: result,
         columns: columns,
         rowCount: result.length,
-        message: `Query returned ${result.length} rows`
+        message: `Query returned ${result.length} rows`,
       });
     } else {
       // For modification queries (INSERT, UPDATE, DELETE, CREATE, etc.)
       const stmt = db.prepare(trimmedQuery);
       const result = stmt.run();
-      
+
       res.json({
         success: true,
         rowCount: result.changes,
         lastInsertRowid: result.lastInsertRowid,
-        message: `Query executed successfully. ${result.changes} rows affected.`
+        message: `Query executed successfully. ${result.changes} rows affected.`,
       });
     }
   } catch (error) {
@@ -1718,7 +1756,7 @@ app.post("/api/database/query", (req, res) => {
     res.json({
       success: false,
       error: error.message,
-      message: "Query execution failed"
+      message: "Query execution failed",
     });
   }
 });

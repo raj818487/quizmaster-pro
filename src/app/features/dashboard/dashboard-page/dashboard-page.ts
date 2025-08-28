@@ -3,7 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { QuizService } from '../../../core/quiz.service';
 import { AuthService } from '../../../core/auth.service';
-import { StatisticsService, DashboardStats, AdminMetrics, RecentQuiz, RecentAttempt } from '../../../core/statistics.service';
+import {
+  StatisticsService,
+  DashboardStats,
+  AdminMetrics,
+  RecentQuiz,
+  RecentAttempt,
+} from '../../../core/statistics.service';
 import { Quiz, User } from '../../../core/models';
 
 interface RecentActivity {
@@ -60,7 +66,7 @@ export class DashboardPage implements OnInit {
 
   async ngOnInit() {
     // Check if we're in admin view from route data
-    this.route.data.subscribe(data => {
+    this.route.data.subscribe((data) => {
       if (data['isAdminView']) {
         this.isAdminView = true;
       }
@@ -113,7 +119,9 @@ export class DashboardPage implements OnInit {
       activities.push({
         id: index + 1,
         type: 'quiz_created',
-        message: `New quiz "${quiz.title}" was created by ${quiz.created_by || 'Unknown'}`,
+        message: `New quiz "${quiz.title}" was created by ${
+          quiz.created_by || 'Unknown'
+        }`,
         timestamp: new Date(quiz.created_at),
         icon: '📝',
       });
@@ -121,10 +129,11 @@ export class DashboardPage implements OnInit {
 
     // Add recent quiz completions
     recentAttempts.forEach((attempt, index) => {
-      const percentage = attempt.total_questions > 0 
-        ? Math.round((attempt.score / attempt.total_questions) * 100)
-        : 0;
-      
+      const percentage =
+        attempt.total_questions > 0
+          ? Math.round((attempt.score / attempt.total_questions) * 100)
+          : 0;
+
       activities.push({
         id: activities.length + 1,
         type: 'quiz_completed',
@@ -142,7 +151,9 @@ export class DashboardPage implements OnInit {
 
   // Quick action navigation methods
   navigateToCreateQuiz() {
-    this.router.navigate(['/admin/quiz-management'], { fragment: 'create-quiz' });
+    this.router.navigate(['/admin/quiz-management'], {
+      fragment: 'create-quiz',
+    });
   }
 
   navigateToQuizManagement() {
@@ -208,7 +219,9 @@ export class DashboardPage implements OnInit {
   getAttemptGrowth(): number {
     // Calculate completion rate percentage
     return this.stats.totalAttempts > 0
-      ? Math.round((this.stats.completedAttempts / this.stats.totalAttempts) * 100)
+      ? Math.round(
+          (this.stats.completedAttempts / this.stats.totalAttempts) * 100
+        )
       : 0;
   }
 }

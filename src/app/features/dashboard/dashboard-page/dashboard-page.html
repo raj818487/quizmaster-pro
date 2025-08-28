@@ -16,9 +16,7 @@
       <div class="stat-content">
         <h3>{{ stats.totalQuizzes }}</h3>
         <p>Total Quizzes</p>
-        <span class="stat-trend positive"
-          >{{ getQuizGrowth() }}% active</span
-        >
+        <span class="stat-trend positive">{{ getQuizGrowth() }}% active</span>
       </div>
     </div>
 
@@ -27,9 +25,7 @@
       <div class="stat-content">
         <h3>{{ stats.activeUsers }}</h3>
         <p>Active Users</p>
-        <span class="stat-trend positive"
-          >{{ stats.totalUsers }} total</span
-        >
+        <span class="stat-trend positive">{{ stats.totalUsers }} total</span>
       </div>
     </div>
 
@@ -49,7 +45,9 @@
       <div class="stat-content">
         <h3>{{ stats.successRate }}%</h3>
         <p>Success Rate</p>
-        <span class="stat-trend neutral">{{ stats.averageScore }}% avg score</span>
+        <span class="stat-trend neutral"
+          >{{ stats.averageScore }}% avg score</span
+        >
       </div>
     </div>
   </div>
@@ -182,7 +180,10 @@
             </div>
           </button>
 
-          <button class="action-btn secondary" (click)="navigateToDbManagement()">
+          <button
+            class="action-btn secondary"
+            (click)="navigateToDbManagement()"
+          >
             <div class="action-icon">🗄️</div>
             <div class="action-content">
               <h4>Database</h4>

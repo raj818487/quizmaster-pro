@@ -1,4 +1,11 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  computed,
+  inject,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/auth.service';
@@ -8,7 +15,10 @@ import {
   QuizAssignmentService,
   QuizAssignment,
 } from '../../../core/quiz-assignment.service';
-import { AccessRequestService, AccessRequest } from '../../../core/access-request.service';
+import {
+  AccessRequestService,
+  AccessRequest,
+} from '../../../core/access-request.service';
 import { User, Quiz } from '../../../core/models';
 
 interface AssignmentSummary {
@@ -44,7 +54,9 @@ export class QuizAccessManagementComponent implements OnInit {
   quizzes = signal<Quiz[]>([]);
   assignments = signal<QuizAssignment[]>([]);
   accessRequests = signal<AccessRequest[]>([]);
-  pendingRequests = computed(() => this.accessRequests().filter(req => req.status === 'pending'));
+  pendingRequests = computed(() =>
+    this.accessRequests().filter((req) => req.status === 'pending')
+  );
   loading = signal<boolean>(false);
   showRequestsTab = signal<boolean>(false);
 
@@ -61,20 +73,20 @@ export class QuizAccessManagementComponent implements OnInit {
       ? this.users().find((user) => user.id === userId) || null
       : null;
   });
-  
+
   // Compute pending access requests
   userPendingRequests = computed(() => {
     const userId = this.selectedUserId();
     if (!userId) return [];
-    
-    return this.accessRequests().filter(req => 
-      req.status === 'pending' && req.user_id === userId
+
+    return this.accessRequests().filter(
+      (req) => req.status === 'pending' && req.user_id === userId
     );
   });
 
   // All pending requests for the admin view
   allPendingRequests = computed(() => {
-    return this.accessRequests().filter(req => req.status === 'pending');
+    return this.accessRequests().filter((req) => req.status === 'pending');
   });
 
   filteredQuizzes = computed(() => {
@@ -106,16 +118,16 @@ export class QuizAccessManagementComponent implements OnInit {
     const userAssignments = this.assignments().filter(
       (a) => a.user_id === userId
     );
-    
+
     // Get pending access requests for this user
     const pendingAccessRequests = this.accessRequests().filter(
-      req => req.user_id === userId && req.status === 'pending'
+      (req) => req.user_id === userId && req.status === 'pending'
     );
-    
+
     const assigned = userAssignments.filter((a) => a.is_assigned);
     const accessible = assigned.filter((a) => a.has_access);
     const pending = assigned.filter((a) => !a.has_access);
-    
+
     // Also include pending access requests in the count
     const totalPending = pending.length + pendingAccessRequests.length;
 
@@ -135,22 +147,26 @@ export class QuizAccessManagementComponent implements OnInit {
     try {
       console.log('Reloading assignments from database...');
       const assignments = await this.assignmentService.getAllAssignments();
-      
+
       // Log the assignments for debugging
       console.log('Fresh assignments loaded:', assignments);
-      
+
       // Set the assignments signal with fresh data
       this.assignments.set([...assignments]); // Create new array to trigger signal update
-      
+
       // Force change detection to ensure UI updates immediately
       this.cdr.detectChanges();
-      
-      console.log('Assignments reloaded successfully:', assignments.length, 'assignments');
-      
+
+      console.log(
+        'Assignments reloaded successfully:',
+        assignments.length,
+        'assignments'
+      );
+
       // Log current user's assignments for debugging
       const userId = this.selectedUserId();
       if (userId) {
-        const userAssignments = assignments.filter(a => a.user_id === userId);
+        const userAssignments = assignments.filter((a) => a.user_id === userId);
         console.log(`User ${userId} assignments:`, userAssignments);
       }
     } catch (error) {
@@ -166,7 +182,7 @@ export class QuizAccessManagementComponent implements OnInit {
       if (this.authService.isAdmin()) {
         // Admin can see all users
         const allUsers = await this.authService.getAllUsers();
-        this.users.set(allUsers.filter(user => user.role === 'user')); // Only show regular users, not admins
+        this.users.set(allUsers.filter((user) => user.role === 'user')); // Only show regular users, not admins
       } else {
         // Regular users can only see themselves
         const authUserData = this.authService.getCurrentUser();
@@ -179,15 +195,17 @@ export class QuizAccessManagementComponent implements OnInit {
       const [quizzes, assignments, accessRequests] = await Promise.all([
         this.quizService.getAllQuizzes(),
         this.assignmentService.getAllAssignments(),
-        this.accessRequestService.getAllAccessRequests()
+        this.accessRequestService.getAllAccessRequests(),
       ]);
 
       this.quizzes.set(quizzes);
       this.assignments.set(assignments);
       this.accessRequests.set(accessRequests);
-      
+
       // Show requests tab if there are pending requests
-      this.showRequestsTab.set(accessRequests.some(req => req.status === 'pending'));
+      this.showRequestsTab.set(
+        accessRequests.some((req) => req.status === 'pending')
+      );
 
       this.loading.set(false);
     } catch (error) {
@@ -261,13 +279,15 @@ export class QuizAccessManagementComponent implements OnInit {
       if (result !== null) {
         console.log('Assignment toggle API response:', result);
         // Small delay to ensure database transaction completes
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         // Force reload all assignments to get the latest state from database
         await this.reloadAssignments();
         console.log('Assignment toggled successfully:', result);
       } else {
         console.error('Failed to toggle assignment - no result returned');
-        this.toastService.error('Failed to update assignment. Please try again.');
+        this.toastService.error(
+          'Failed to update assignment. Please try again.'
+        );
       }
     } catch (error) {
       console.error('Error updating assignment:', error);
@@ -295,7 +315,9 @@ export class QuizAccessManagementComponent implements OnInit {
     // Can only toggle access if quiz is assigned
     if (!assignment || !assignment.is_assigned) {
       this.loading.set(false);
-      this.toastService.warning('Quiz must be assigned before you can manage access.');
+      this.toastService.warning(
+        'Quiz must be assigned before you can manage access.'
+      );
       return;
     }
 
@@ -314,7 +336,7 @@ export class QuizAccessManagementComponent implements OnInit {
       if (result !== null) {
         console.log('Access toggle API response:', result);
         // Small delay to ensure database transaction completes
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         // Force reload all assignments to get the latest state from database
         await this.reloadAssignments();
         console.log('Access toggled successfully:', result);
@@ -357,10 +379,10 @@ export class QuizAccessManagementComponent implements OnInit {
     // Show loading state
     this.loading.set(true);
 
-    const assignments = allQuizzes.map(quiz => ({
+    const assignments = allQuizzes.map((quiz) => ({
       quizId: quiz.id!,
       isAssigned: true,
-      hasAccess: false  // Assignment does not automatically grant access
+      hasAccess: false, // Assignment does not automatically grant access
     }));
 
     try {
@@ -368,22 +390,28 @@ export class QuizAccessManagementComponent implements OnInit {
       const result = await this.assignmentService.bulkUpdateAssignments({
         userId: userId,
         assignments: assignments,
-        assignedBy: assignedBy
+        assignedBy: assignedBy,
       });
-      
+
       if (result && Array.isArray(result)) {
         console.log('Bulk assign API response:', result);
         // Small delay to ensure database transaction completes
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
-        this.toastService.success(`Successfully assigned all ${allQuizzes.length} quizzes to ${this.selectedUser()?.username}`);
+        this.toastService.success(
+          `Successfully assigned all ${allQuizzes.length} quizzes to ${
+            this.selectedUser()?.username
+          }`
+        );
       } else {
         this.toastService.error('Failed to assign quizzes. Please try again.');
       }
     } catch (error) {
       console.error('Error bulk assigning quizzes:', error);
-      this.toastService.error('Error occurred while assigning quizzes. Please try again.');
+      this.toastService.error(
+        'Error occurred while assigning quizzes. Please try again.'
+      );
     } finally {
       this.loading.set(false);
     }
@@ -405,10 +433,10 @@ export class QuizAccessManagementComponent implements OnInit {
     // Show loading state
     this.loading.set(true);
 
-    const assignments = allQuizzes.map(quiz => ({
+    const assignments = allQuizzes.map((quiz) => ({
       quizId: quiz.id!,
       isAssigned: false,
-      hasAccess: false
+      hasAccess: false,
     }));
 
     try {
@@ -416,19 +444,27 @@ export class QuizAccessManagementComponent implements OnInit {
       const result = await this.assignmentService.bulkUpdateAssignments({
         userId: userId,
         assignments: assignments,
-        assignedBy: assignedBy
+        assignedBy: assignedBy,
       });
-      
+
       if (result && Array.isArray(result)) {
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
-        this.toastService.success(`Successfully unassigned all quizzes from ${this.selectedUser()?.username}`);
+        this.toastService.success(
+          `Successfully unassigned all quizzes from ${
+            this.selectedUser()?.username
+          }`
+        );
       } else {
-        this.toastService.error('Failed to unassign quizzes. Please try again.');
+        this.toastService.error(
+          'Failed to unassign quizzes. Please try again.'
+        );
       }
     } catch (error) {
       console.error('Error bulk unassigning quizzes:', error);
-      this.toastService.error('Error occurred while unassigning quizzes. Please try again.');
+      this.toastService.error(
+        'Error occurred while unassigning quizzes. Please try again.'
+      );
     } finally {
       this.loading.set(false);
     }
@@ -450,10 +486,10 @@ export class QuizAccessManagementComponent implements OnInit {
     // Show loading state
     this.loading.set(true);
 
-    const assignments = allQuizzes.map(quiz => ({
+    const assignments = allQuizzes.map((quiz) => ({
       quizId: quiz.id!,
-      isAssigned: true,  // Must be assigned to have access
-      hasAccess: true
+      isAssigned: true, // Must be assigned to have access
+      hasAccess: true,
     }));
 
     try {
@@ -461,19 +497,25 @@ export class QuizAccessManagementComponent implements OnInit {
       const result = await this.assignmentService.bulkUpdateAssignments({
         userId: userId,
         assignments: assignments,
-        assignedBy: assignedBy
+        assignedBy: assignedBy,
       });
-      
+
       if (result && Array.isArray(result)) {
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
-        this.toastService.success(`Successfully enabled access to all ${allQuizzes.length} quizzes for ${this.selectedUser()?.username}`);
+        this.toastService.success(
+          `Successfully enabled access to all ${
+            allQuizzes.length
+          } quizzes for ${this.selectedUser()?.username}`
+        );
       } else {
         this.toastService.error('Failed to enable access. Please try again.');
       }
     } catch (error) {
       console.error('Error enabling all access:', error);
-      this.toastService.error('Error occurred while enabling access. Please try again.');
+      this.toastService.error(
+        'Error occurred while enabling access. Please try again.'
+      );
     } finally {
       this.loading.set(false);
     }
@@ -487,8 +529,10 @@ export class QuizAccessManagementComponent implements OnInit {
     const assignedBy = currentUser?.id;
 
     const currentAssignments = this.assignments();
-    const userAssignments = currentAssignments.filter(a => a.user_id === userId && a.is_assigned);
-    
+    const userAssignments = currentAssignments.filter(
+      (a) => a.user_id === userId && a.is_assigned
+    );
+
     if (userAssignments.length === 0) {
       this.toastService.warning('No assigned quizzes to disable access for.');
       return;
@@ -497,10 +541,10 @@ export class QuizAccessManagementComponent implements OnInit {
     // Show loading state
     this.loading.set(true);
 
-    const assignments = userAssignments.map(assignment => ({
+    const assignments = userAssignments.map((assignment) => ({
       quizId: assignment.quiz_id,
-      isAssigned: assignment.is_assigned,  // Keep assignment status
-      hasAccess: false  // Remove access
+      isAssigned: assignment.is_assigned, // Keep assignment status
+      hasAccess: false, // Remove access
     }));
 
     try {
@@ -508,19 +552,25 @@ export class QuizAccessManagementComponent implements OnInit {
       const result = await this.assignmentService.bulkUpdateAssignments({
         userId: userId,
         assignments: assignments,
-        assignedBy: assignedBy
+        assignedBy: assignedBy,
       });
-      
+
       if (result && Array.isArray(result)) {
         // Force reload assignments to get the latest state
         await this.reloadAssignments();
-        this.toastService.success(`Successfully disabled access to ${userAssignments.length} assigned quizzes for ${this.selectedUser()?.username}`);
+        this.toastService.success(
+          `Successfully disabled access to ${
+            userAssignments.length
+          } assigned quizzes for ${this.selectedUser()?.username}`
+        );
       } else {
         this.toastService.error('Failed to disable access. Please try again.');
       }
     } catch (error) {
       console.error('Error disabling all access:', error);
-      this.toastService.error('Error occurred while disabling access. Please try again.');
+      this.toastService.error(
+        'Error occurred while disabling access. Please try again.'
+      );
     } finally {
       this.loading.set(false);
     }
@@ -542,40 +592,44 @@ export class QuizAccessManagementComponent implements OnInit {
     const target = event.target as HTMLSelectElement;
     this.selectedCategory.set(target.value);
   }
-  
+
   // Access Request Management
   toggleRequestsTab() {
-    this.showRequestsTab.update(current => !current);
+    this.showRequestsTab.update((current) => !current);
   }
-  
-  async approveAccessRequest(requestId: number, userId: number, quizId: number) {
+
+  async approveAccessRequest(
+    requestId: number,
+    userId: number,
+    quizId: number
+  ) {
     this.loading.set(true);
-    
+
     try {
       const currentUser = this.authService.getCurrentUser();
-      
+
       // Update the access request status
       const updateSuccess = await this.accessRequestService.updateAccessRequest(
-        requestId, 
+        requestId,
         {
           status: 'approved',
           reviewedBy: currentUser?.id || 0,
           responseMessage: 'Your access request has been approved.',
-          autoAssign: true // Automatically assign the quiz and grant access
+          autoAssign: true, // Automatically assign the quiz and grant access
         }
       );
-      
+
       if (updateSuccess) {
         // Reload access requests and assignments
         const [accessRequests, assignments] = await Promise.all([
           this.accessRequestService.getAllAccessRequests(),
-          this.assignmentService.getAllAssignments()
+          this.assignmentService.getAllAssignments(),
         ]);
-        
+
         this.accessRequests.set(accessRequests);
         this.assignments.set([...assignments]);
         this.cdr.detectChanges();
-        
+
         this.toastService.success('Access request approved successfully.');
       } else {
         this.toastService.error('Failed to approve access request.');
@@ -587,29 +641,30 @@ export class QuizAccessManagementComponent implements OnInit {
       this.loading.set(false);
     }
   }
-  
+
   async rejectAccessRequest(requestId: number) {
     this.loading.set(true);
-    
+
     try {
       const currentUser = this.authService.getCurrentUser();
-      
+
       // Update the access request status
       const updateSuccess = await this.accessRequestService.updateAccessRequest(
-        requestId, 
+        requestId,
         {
           status: 'rejected',
           reviewedBy: currentUser?.id || 0,
-          responseMessage: 'Your access request has been rejected.'
+          responseMessage: 'Your access request has been rejected.',
         }
       );
-      
+
       if (updateSuccess) {
         // Reload access requests
-        const accessRequests = await this.accessRequestService.getAllAccessRequests();
+        const accessRequests =
+          await this.accessRequestService.getAllAccessRequests();
         this.accessRequests.set(accessRequests);
         this.cdr.detectChanges();
-        
+
         this.toastService.success('Access request rejected successfully.');
       } else {
         this.toastService.error('Failed to reject access request.');
@@ -621,15 +676,15 @@ export class QuizAccessManagementComponent implements OnInit {
       this.loading.set(false);
     }
   }
-  
+
   // Helper methods
   getQuizTitle(quizId: number): string {
-    const quiz = this.quizzes().find(q => q.id === quizId);
+    const quiz = this.quizzes().find((q) => q.id === quizId);
     return quiz?.title || 'Unknown Quiz';
   }
-  
+
   getUserName(userId: number): string {
-    const user = this.users().find(u => u.id === userId);
+    const user = this.users().find((u) => u.id === userId);
     return user?.username || 'Unknown User';
   }
 }

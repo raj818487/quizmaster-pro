@@ -208,7 +208,10 @@ export class ManageUsersComponent implements OnInit {
           return;
         }
         if (user.newPassword.length < 6) {
-          this.showToast('Password must be at least 6 characters long', 'error');
+          this.showToast(
+            'Password must be at least 6 characters long',
+            'error'
+          );
           return;
         }
         if (user.newPassword !== user.confirmPassword) {
@@ -422,7 +425,7 @@ export class ManageUsersComponent implements OnInit {
         this.newUser.password,
         this.newUser.role
       );
-      
+
       if (result.success) {
         this.showToast('User created successfully', 'success');
         this.hideCreateForm();

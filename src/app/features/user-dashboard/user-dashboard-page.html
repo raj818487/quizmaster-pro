@@ -141,7 +141,10 @@
           [disabled]="isRequestButtonDisabled(quiz)"
           (click)="startQuiz(quiz)"
         >
-          <span *ngIf="isRequestingAccess(quiz.id!) && quiz.access_status === 'no_access'" class="spinner-inline"></span>
+          <span
+            *ngIf="isRequestingAccess(quiz.id!) && quiz.access_status === 'no_access'"
+            class="spinner-inline"
+          ></span>
           {{ quiz.can_start ? 'Start Quiz' : getRequestButtonText(quiz) }}
         </button>
         <button class="btn btn-secondary" (click)="viewQuizDetails(quiz)">
